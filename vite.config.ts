@@ -1,5 +1,10 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite'
 
 export default defineConfig({
-  // TODO: Add configuration
-});
+  optimizeDeps: {
+    include: ['phaser'],
+  },
+  build: {
+    target: 'es2020',
+  },
+})
