@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 
 import type { IEntity } from './types'
 import { Entity, InputRouter, IsoRenderer, World } from './engine'
-import { ENTITY_SPAWNS, GameScene, MAP_DATA } from './game'
+import { GameScene, INITIAL_ENTITIES, MAP_TERRAIN } from './game'
 
 class IsoScene extends Phaser.Scene {
   private world!: World
@@ -15,13 +15,13 @@ class IsoScene extends Phaser.Scene {
 
   create(): void {
     this.world = new World(10, 10)
-    this.world.loadMap(MAP_DATA)
+    this.world.loadMap(MAP_TERRAIN)
 
-    this.entities = ENTITY_SPAWNS.map((spawn, index) =>
+    this.entities = INITIAL_ENTITIES.map((spawn, index) =>
       new Entity(
         String(index + 1),
         spawn.type,
-        { row: spawn.row, col: spawn.col },
+        { row: spawn.position.row, col: spawn.position.col },
         spawn.health,
         spawn.maxHealth
       )
