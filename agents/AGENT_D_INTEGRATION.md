@@ -2,82 +2,120 @@
 
 ## Your Job: Wire It All Together
 
-You are responsible for the `main.ts` entry point and the `README.md`. This is where the engine and game layers are instantiated and connected inside Phaser.
+You are the last agent to run. Agents A, B, and C have already shipped their files. Your job is to write the entry point that imports from all three and produces a running application. You also write the README.
 
-This agent runs last, after Agents A, B, and C have shipped.
+You produce exactly two files: `src/main.ts` and `README.md`.
 
------
-
-## Files You Produce
-
-```
-src/
-└── main.ts
-
-README.md
-```
-
------
+---
 
 ## Context You Need
 
-- The engine lives in `src/engine/` and exports `World`, `Entity`, `GameLoop`, `InputRouter`, `IsoRenderer`, and `AssetLoader`.
-- The game layer lives in `src/game/` and exports `MapData`, `TurnManager`, and `GameScene` (plus any map/entity seed data).
-- Shared interfaces live in `src/types.ts`.
+The project is a 2D isometric strategy game engine built on Phaser 3. It has three layers:
 
-No external assets are used. Rendering is done via `Phaser.GameObjects.Graphics`.
+- **Scaffold** (Agent A): project config, shared types in `src/types.ts`
+- **Engine** (Agent B): five components in `src/engine/` — World, Entity, GameLoop, InputRouter, AssetLoader, IsoRenderer
+- **Game** (Agent C): a demo tactical scenario in `src/game/` — MapData, TurnManager, GameScene
 
------
+Your job is simple: boot Phaser, create the engine components, create the game scene, wire them together, and start the loop. The engine and game already know how to do their jobs. You just introduce them.
 
-## main.ts Requirements
+---
 
-### Core Responsibilities
-1. **Create a Phaser Game** with a single Scene.
-2. In `create()`:
-   - Instantiate the engine components.
-   - Load the map data into the World.
-   - Create Entity instances from the game layer's initial entity data.
-   - Instantiate the GameScene and call `initialize(world, inputRouter, entities)`.
-   - Instantiate the IsoRenderer with a Graphics object.
-   - Start the GameLoop and on each tick:
-     - Call `gameScene.update(delta)`
-     - Call `isoRenderer.render()`
-3. Ensure the game scales to the full window and responds to resize.
+## What Each Layer Exports
 
-### Suggested Scene Structure
-- `preload()` uses `AssetLoader` with an empty manifest (no assets needed).
-- `create()` builds the world, entities, input router, game scene, renderer, and loop.
-- `update()` can be unused if you rely on `GameLoop`.
+**From `src/engine/index.ts`:**
+```typescript
+World          // class — implements IWorld
+Entity         // class — implements IEntity
+GameLoop       // class — implements IGameLoop, wraps a Phaser Scene
+InputRouter    // class — implements IInputRouter
+AssetLoader    // class — implements IAssetLoader
+IsoRenderer    // class — draws World + Entities each frame
+gridToScreen   // function
+screenToGrid   // function
+TILE_W         // number (64)
+TILE_H         // number (32)
+```
 
-### Screen Size Handling
-- Use `window.innerWidth` / `window.innerHeight` for initial sizing.
-- Handle `resize` events to update the Phaser scale and renderer origin.
+**From `src/game/index.ts`:**
+```typescript
+GameScene      // class — implements IGameScene
+MAP_DATA       // TerrainType[][] — the map layout
+ENTITY_SPAWNS  // EntitySpawnData[] — where entities start
+```
 
------
+**From `src/types.ts`:**
+All shared interfaces. You will need `IEntity` for the entity list type. Note that `IGameScene.initialize` takes three arguments: `(world, inputRouter, entities)`.
 
-## README.md Requirements
+---
 
-Include:
-- Project overview (1–2 paragraphs)
-- Quick start commands:
-  - `npm install`
-  - `npm run dev`
-- Short architecture summary (World + Entities + Game Loop + Phaser)
-- How to play (tap a tile to move, tap an enemy to attack, win/lose condition)
+## src/main.ts — The Boot Sequence
 
-Keep it lightweight and readable for new contributors.
+This file does the following, in order:
 
------
+1. **Define a Phaser Scene class** that extends `Phaser.Scene`. This is the Scene that owns the game loop, the renderer, and the input. Call it `IsoScene` or similar.
+
+2. **In the Scene's `create` method**, do the following in order:
+
+   a. Create a `World` instance: `const world = new World(10, 10)`.
+
+   b. Create the entity list. Iterate over `ENTITY_SPAWNS` and create an `Entity` for each one. Use a simple incrementing counter for ids. The Entity constructor signature is: `new Entity(id: string, type: string, position: EntityPosition, health?: number, maxHealth?: number)`. So for each spawn: `new Entity(String(i), spawn.type, { row: spawn.row, col: spawn.col }, spawn.health, spawn.maxHealth)`. Store them in an array: `const entities: IEntity[] = [...]`.
+
+   c. Create the `InputRouter`: `new InputRouter(this, world, () => entities)`. The third argument is a getter — it returns the live array, not a snapshot, because entities get spliced out when they die.
+
+   d. Create the `GameScene` instance and initialize it: `gameScene.initialize(world, inputRouter, entities)`. The entities array is passed directly — GameScene, InputRouter, and IsoRenderer all hold references to the same array. When GameScene splices a dead enemy out, everyone sees it.
+
+   e. Create the `IsoRenderer`: `new IsoRenderer(this.add.graphics(), world, () => entities, this.cameras.main.width, this.cameras.main.height)`. Same getter pattern as InputRouter.
+
+   f. The Scene's built-in `update` cycle is the game loop. No need to instantiate the `GameLoop` class separately — see the note below.
+
+3. **In the Scene's `update` method**, do the following each frame:
+
+   a. Call `gameScene.update(delta)` to let the game process its logic (turn management, win/lose checks).
+
+   b. Call `isoRenderer.render()` (or equivalent) to redraw the world and entities.
+
+   c. Check `gameScene.isOver()`. If the game is over, display a simple overlay message. Use a Phaser Text object. "YOU WIN" or "YOU LOSE" in large text, centered on screen. You only need to create this text once — check if it already exists before creating it again. Optionally add a "Tap to restart" message below it.
+
+4. **Boot Phaser.** After defining the Scene class, create the Phaser Game config and start it:
+
+```typescript
+const config: Phaser.Types.GameConfig = {
+  type: Phaser.AUTO,           // WebGL if available, Canvas fallback
+  parent: 'game-container',    // matches the div id in index.html
+  width: window.innerWidth,
+  height: window.innerHeight,
+  backgroundColor: '#1a1a2e',
+  scene: [IsoScene]
+}
+
+new Phaser.Game(config)
+```
+
+**A note on GameLoop:** The Architecture doc specifies a GameLoop component. Agent B built one. But Phaser Scenes already have a built-in update cycle (`create` → `update` loop). For this integration, the simplest correct approach is to use the Scene's native update cycle directly. The Scene's `update(time, delta)` method IS the loop. Use it.
+
+---
+
+## README.md
+
+Write a README that covers:
+
+- What this project is (one paragraph, no hype)
+- How to run it (`npm install`, `npm run dev`)
+- What the prototype demonstrates (the engine's five components in action, a playable tactical scenario)
+- The mental model (World, Entities, Loop — three sentences max)
+- The file structure (the `src/engine/` vs `src/game/` boundary, and why it exists)
+- A note that this is an ideation-stage prototype, MIT licensed
+
+Keep it short. A developer should be able to read it in three minutes and understand what they're looking at.
+
+---
 
 ## What You Must Not Do
 
-- Do not modify `src/types.ts`.
-- Do not import `src/game/` from inside `src/engine/` or vice versa. Only `main.ts` may connect them.
-- Do not add new npm dependencies.
-- Do not introduce external assets.
+Do not modify any file produced by Agents A, B, or C. You only create `src/main.ts` and `README.md`.
 
------
+Do not add npm dependencies.
 
-## When You Finish
+Do not build game logic in main.ts. If something feels like it belongs in the game layer, it probably does. Main.ts is plumbing, not policy.
 
-Run `npm run dev` only if you need to sanity check behavior. Otherwise, no tests are required.
+If something doesn't fit — if an interface is missing a method, or a constructor signature doesn't match what you need — leave a clear `// TODO:` comment explaining what's needed. Do not improvise a workaround that changes the contract.
