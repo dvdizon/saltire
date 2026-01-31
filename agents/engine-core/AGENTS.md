@@ -1,4 +1,4 @@
-# Agent B — Engine Core
+# Engine Core Agent
 
 ## Your Job: Engine Core
 
@@ -89,7 +89,7 @@ export interface IAssetLoader {
 
 ## Constructor Signatures (must match exactly)
 
-These are the concrete shapes that Agent D will call. Build to these signatures exactly. No reordering, no options objects, no defaults that change the arity.
+These are the concrete shapes that the Integration Agent will call. Build to these signatures exactly. No reordering, no options objects, no defaults that change the arity.
 
 ```typescript
 new World(rows: number, cols: number)
@@ -178,7 +178,7 @@ An Entity is anything that exists in the World. The engine doesn't care what it 
 
 **Constructor:** `new Entity(id: string, type: string, position: EntityPosition, health?: number, maxHealth?: number)`
 
-The `Entity` class implements `IEntity`. The caller (Agent D, in `main.ts`) is responsible for generating unique `id` values — use a simple incrementing counter there. Health fields are optional — set them only if the constructor receives them.
+The `Entity` class implements `IEntity`. The caller (Integration Agent, in `main.ts`) is responsible for generating unique `id` values — use a simple incrementing counter there. Health fields are optional — set them only if the constructor receives them.
 
 The `update` method is a no-op by default. The game layer will call it every tick. Static entities (buildings, items) don't override it. Moving entities will have their position updated externally by the game layer — the Entity class itself does not move.
 

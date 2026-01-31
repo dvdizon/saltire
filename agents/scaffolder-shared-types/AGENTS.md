@@ -1,4 +1,4 @@
-# AGENT_A_SCAFFOLD.md
+# Scaffolder + Shared Types Agent
 
 ## Your Job: Project Scaffold + Shared Types
 

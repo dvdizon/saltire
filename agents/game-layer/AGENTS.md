@@ -1,4 +1,4 @@
-# Agent C — Game Layer
+# Game Layer Agent
 
 ## Your Job: Build the Demo Game
 

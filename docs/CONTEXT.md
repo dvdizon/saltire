@@ -15,10 +15,14 @@ saltire/
 │   ├── Architecture_Engineering_Doc.md  ← How
 │   └── BUILD_PLAN.md           ← Execution plan
 ├── agents/                     # Agent-specific instructions
-│   ├── AGENT_A_SCAFFOLD.md
-│   ├── AGENT_B_ENGINE.md
-│   ├── AGENT_C_GAME.md
-│   └── AGENT_D_INTEGRATION.md
+│   ├── scaffolder-shared-types/
+│   │   └── AGENTS.md
+│   ├── engine-core/
+│   │   └── AGENTS.md
+│   ├── game-layer/
+│   │   └── AGENTS.md
+│   └── integration/
+│       └── AGENTS.md
 ├── src/
 │   ├── types.ts                # Shared type definitions
 │   ├── engine/                 # Core engine components
@@ -89,9 +93,9 @@ The engine earns its place by being fast to learn and fast to build on. Everythi
 
 The `agents/` directory contains role-specific instructions for AI agents working on this project:
 
-- **AGENT_A_SCAFFOLD.md** — Project scaffolding and setup
-- **AGENT_B_ENGINE.md** — Core engine implementation
-- **AGENT_C_GAME.md** — Game-layer implementation
-- **AGENT_D_INTEGRATION.md** — Integration and testing
+- `agents/scaffolder-shared-types/AGENTS.md` — Project scaffolding and setup
+- `agents/engine-core/AGENTS.md` — Core engine implementation
+- `agents/game-layer/AGENTS.md` — Game-layer implementation
+- `agents/integration/AGENTS.md` — Integration and testing
 
 Each agent doc defines scope, responsibilities, and constraints for that role. Agents should read their specific doc along with this context and the two guiding documents.
