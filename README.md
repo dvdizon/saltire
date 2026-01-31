@@ -1,3 +1,31 @@
 # Saltire
 
-<!-- TODO: Add project description -->
+Saltire is a 2D isometric strategy game engine prototype built with Phaser 3 and TypeScript. The goal is to prove that a developer can stand up a playable, grid-based tactical scenario quickly while keeping the engine's mental model simple and explicit.
+
+## Running the prototype
+
+```bash
+npm install
+npm run dev
+```
+
+## What this prototype demonstrates
+
+- The five engine components (World, Entity, GameLoop, InputRouter, AssetLoader) working together.
+- A playable tactical scenario on top of the engine (grid, turns, combat, win/lose).
+- A thin integration layer that boots the engine and the game without entangling their logic.
+
+## Mental model
+
+The World is a grid of tiles. Entities live on the grid. The loop updates the world and entities, then renders the isometric view each frame.
+
+## File structure
+
+- `src/engine/` contains engine primitives that stay game-agnostic.
+- `src/game/` contains the demo scenario and game-specific logic.
+
+This separation keeps the engine reusable and the game layer free to evolve without rewiring core systems.
+
+## Status
+
+This is an ideation-stage prototype released under the MIT license.
