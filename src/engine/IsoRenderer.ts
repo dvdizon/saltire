@@ -10,6 +10,8 @@ const ENTITY_Y_OFFSET = TILE_H * 0.3
 const HUD_MARGIN = 16
 const HUD_WIDTH = 160
 const HUD_HEIGHT = 12
+const MINI_MAP_SIZE = 120
+const MINI_MAP_PADDING = 10
 const WALL_HEIGHT = TILE_H
 const FOG_COLOR = 0x0b1120
 const FOG_ALPHA = 0.78
@@ -88,6 +90,7 @@ export class IsoRenderer {
     this.drawMoveHints(visibility)
     this.drawEntities(visibility)
     this.drawHud()
+    this.drawMiniMap(visibility)
   }
 
   // Draw terrain tiles with fog-of-war overlays.
@@ -298,6 +301,75 @@ export class IsoRenderer {
     this.graphics.fillRect(hudX, hudY, filledWidth, HUD_HEIGHT)
     this.graphics.lineStyle(1, 0x000000, 0.6)
     this.graphics.strokeRect(hudX, hudY, HUD_WIDTH, HUD_HEIGHT)
+  }
+
+  // Mini-map shows the world overview anchored to the camera.
+  private drawMiniMap(visibility: VisibilityState): void {
+    const { width } = this.getViewportSize()
+    const camera = this.graphics.scene.cameras.main
+    const tileSize = Math.min(MINI_MAP_SIZE / this.world.cols, MINI_MAP_SIZE / this.world.rows)
+    const mapWidth = this.world.cols * tileSize
+    const mapHeight = this.world.rows * tileSize
+    const mapX = camera.scrollX + width - HUD_MARGIN - mapWidth
+    const mapY = camera.scrollY + HUD_MARGIN
+
+    this.graphics.fillStyle(0x0f172a, 0.7)
+    this.graphics.fillRect(
+      mapX - MINI_MAP_PADDING,
+      mapY - MINI_MAP_PADDING,
+      mapWidth + MINI_MAP_PADDING * 2,
+      mapHeight + MINI_MAP_PADDING * 2,
+    )
+    this.graphics.lineStyle(1, 0xffffff, 0.35)
+    this.graphics.strokeRect(
+      mapX - MINI_MAP_PADDING,
+      mapY - MINI_MAP_PADDING,
+      mapWidth + MINI_MAP_PADDING * 2,
+      mapHeight + MINI_MAP_PADDING * 2,
+    )
+
+    for (let row = 0; row < this.world.rows; row += 1) {
+      for (let col = 0; col < this.world.cols; col += 1) {
+        const tile = this.world.getTile(row, col)
+        if (!tile) {
+          continue
+        }
+
+        const tileX = mapX + col * tileSize
+        const tileY = mapY + row * tileSize
+        const visible = visibility.isVisible(row, col)
+        const explored = visibility.isExplored(row, col)
+
+        let color = TERRAIN_COLORS[tile.terrain]
+        let alpha = 1
+
+        if (visibility.hasFog && !explored && !visible) {
+          color = FOG_COLOR
+          alpha = FOG_ALPHA
+        } else if (visibility.hasFog && explored && !visible) {
+          // Keep terrain color but dim it to match explored state.
+          alpha = 0.35
+        }
+
+        this.graphics.fillStyle(color, alpha)
+        this.graphics.fillRect(tileX, tileY, tileSize, tileSize)
+      }
+    }
+
+    const entitySize = Math.max(2, Math.floor(tileSize * 0.5))
+    for (const entity of this.getEntities()) {
+      const { row, col } = entity.position
+      if (visibility.hasFog && !visibility.isExplored(row, col)) {
+        continue
+      }
+
+      const color = ENTITY_COLORS[entity.type] ?? 0xffffff
+      const x = mapX + col * tileSize + tileSize / 2
+      const y = mapY + row * tileSize + tileSize / 2
+
+      this.graphics.fillStyle(color, 1)
+      this.graphics.fillCircle(x, y, entitySize / 2)
+    }
   }
 
   // Draw a faux-3D wall block to make obstacles feel taller.
