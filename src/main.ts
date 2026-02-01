@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 
-import type { IEntity } from './types'
+import type { IEntity, EntitySnapshot } from './types'
 import { Entity, InputRouter, IsoRenderer, World } from './engine'
 import { GameScene, INITIAL_ENTITIES, MAP_TERRAIN } from './game'
 
@@ -36,6 +36,7 @@ class IsoScene extends Phaser.Scene {
 
     this.gameScene = new GameScene()
     this.gameScene.initialize(this.world, this.inputRouter, this.entities)
+    this.gameScene.setEntityFactory((snap: EntitySnapshot) => new Entity(snap.id, snap.type, snap.position, snap.health, snap.maxHealth))
 
     this.isoRenderer = new IsoRenderer(
       this.add.graphics(),
