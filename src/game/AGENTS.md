@@ -14,6 +14,7 @@ Project scaffolding and shared types are already established. Do not modify conf
 
 ## Worktrees (Required)
 
+- Only use the git worktree workflow when running in the Codex CLI or the VS Code plugin. Skip worktrees for Codex web/mobile because diffs in worktrees are not visible there.
 - Start every change by creating a git worktree under `.worktrees` at the repo root.
 - Use the naming convention `<YYYY-MM-DD-description>` for the worktree directory.
 - Do all work from that worktree directory, not the main working directory.
