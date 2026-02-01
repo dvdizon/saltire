@@ -4,7 +4,7 @@
 
 You are building the engine. Five components plus one renderer utility. These are the files that turn Phaser 3 into an isometric strategy game platform.
 
-You own everything inside `src/engine/`. You do not touch anything outside that directory. You do not write `main.ts`. You do not import from `src/game/`.
+You own everything inside `src/engine/`. You do not touch anything outside that directory. You do not write `main.ts`. You do not import from `src/reference-game/`.
 
 ---
 
@@ -379,4 +379,4 @@ export { IsoRenderer, gridToScreen, screenToGrid, TILE_W, TILE_H } from './IsoRe
 
 ## What You Must Not Do
 
-Do not import from `src/game/`. Do not write `src/main.ts`. Do not add npm dependencies. Do not invent public interfaces not in the shared contract. If something feels missing from the contract, leave a `// TODO:` comment — do not improvise a solution.
+Do not import from `src/reference-game/`. Do not write `src/main.ts`. Do not add npm dependencies. Do not invent public interfaces not in the shared contract. If something feels missing from the contract, leave a `// TODO:` comment — do not improvise a solution.

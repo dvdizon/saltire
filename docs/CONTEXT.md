@@ -28,8 +28,8 @@ saltire/
 │   │   ├── AssetLoader.ts
 │   │   ├── IsoRenderer.ts
 │   │   └── index.ts
-│   ├── game/                   # Game-layer code
-│   │   └── AGENTS.md            # Game layer agent instructions
+│   ├── reference-game/         # Reference game layer code
+│   │   └── AGENTS.md            # Reference game agent instructions
 │   │   ├── MapData.ts
 │   │   ├── TurnManager.ts
 │   │   ├── GameScene.ts
@@ -92,7 +92,7 @@ The engine earns its place by being fast to learn and fast to build on. Everythi
 Active agent instructions live alongside the code they govern:
 
 - `src/engine/AGENTS.md` — Core engine implementation
-- `src/game/AGENTS.md` — Game-layer implementation
+- `src/reference-game/AGENTS.md` — Reference game implementation
 
 Deprecated agent instructions live in `docs/deprecated-agents/`:
 

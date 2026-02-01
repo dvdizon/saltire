@@ -2,7 +2,7 @@
 
 ## Your Job: Build the Demo Game
 
-You are responsible for the playable demo game that sits on top of the engine. This layer defines the map data, turn structure, and win/lose logic. It **must only use the shared interfaces in `src/types.ts`** and **must not import from `src/engine/`**.
+You are responsible for the playable reference game that sits on top of the engine. This layer defines the map data, turn structure, and win/lose logic. It **must only use the shared interfaces in `src/types.ts`** and **must not import from `src/engine/`**.
 
 -----
 
@@ -37,7 +37,7 @@ The engine already handles rendering, input translation, and ticking. Your code 
 ## Files You Produce
 
 ```
-src/game/
+src/reference-game/
 ├── MapData.ts
 ├── TurnManager.ts
 ├── GameScene.ts

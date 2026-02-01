@@ -16,7 +16,7 @@ The project is a 2D isometric strategy game engine built on Phaser 3. It has thr
 
 - **Scaffold** (Scaffolder + Shared Types Agent): project config, shared types in `src/types.ts`
 - **Engine** (Engine Core Agent): five components in `src/engine/` — World, Entity, GameLoop, InputRouter, AssetLoader, IsoRenderer
-- **Game** (Game Layer Agent): a demo tactical scenario in `src/game/` — MapData, TurnManager, GameScene
+- **Game** (Reference Game Agent): a demo tactical scenario in `src/reference-game/` — MapData, TurnManager, GameScene
 
 Your job is simple: boot Phaser, create the engine components, create the game scene, wire them together, and start the loop. The engine and game already know how to do their jobs. You just introduce them.
 
@@ -38,7 +38,7 @@ TILE_W         // number (64)
 TILE_H         // number (32)
 ```
 
-**From `src/game/index.ts`:**
+**From `src/reference-game/index.ts`:**
 ```typescript
 GameScene      // class — implements IGameScene
 MAP_DATA       // TerrainType[][] — the map layout
@@ -105,7 +105,7 @@ Write a README that covers:
 - How to run it (`npm install`, `npm run dev`)
 - What the prototype demonstrates (the engine's five components in action, a playable tactical scenario)
 - The mental model (World, Entities, Loop — three sentences max)
-- The file structure (the `src/engine/` vs `src/game/` boundary, and why it exists)
+- The file structure (the `src/engine/` vs `src/reference-game/` boundary, and why it exists)
 - A note that this is an ideation-stage prototype, MIT licensed
 
 Keep it short. A developer should be able to read it in three minutes and understand what they're looking at.
