@@ -214,6 +214,13 @@ export class GameScene implements IGameScene {
       applyAction(action, entities)
     }
 
+    const player = entities.find((entity) => entity.type === 'player') ?? null
+    const enemies = entities.filter((entity) => entity.type === 'enemy' && (entity.health ?? 0) > 0)
+    // NOTE: This derives an authoritative result from final entities. This crosses a slight boundary
+    // with game rules; ideally we'd defer to the game-rule source of truth, but it may not be available here.
+    const derivedResult: 'win' | 'lose' | 'playing' =
+      player && (player.health ?? 0) <= 0 ? 'lose' : enemies.length === 0 ? 'win' : 'playing'
+
     return {
       entities: entities.map((entity) => ({
         id: entity.id,
@@ -223,7 +230,7 @@ export class GameScene implements IGameScene {
         maxHealth: entity.maxHealth,
       })),
       turn: snapshot.turn,
-      result: snapshot.result,
+      result: derivedResult,
       actionLog: [...snapshot.actionLog, ...actions],
     }
   }
