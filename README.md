@@ -9,6 +9,13 @@ npm install
 npm run dev
 ```
 
+## Quick checks
+
+```bash
+npm run typecheck
+npm run sanity
+```
+
 ## Worktrees
 
 Use the helper script to create a worktree and copy `node_modules` when available:
@@ -27,6 +34,8 @@ Or on bash environments:
 
 - Click/tap an adjacent tile to move (no diagonals).
 - Click/tap an adjacent enemy to attack.
+- Click/tap the info icon in the bottom-left to show the info panel.
+- Click/tap the X in the panel to hide it.
 - Each move or attack ends your turn; enemies act right after.
 - Win by defeating all enemies; lose if your player reaches 0 health.
 - Refresh the page to restart after a win or loss.

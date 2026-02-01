@@ -113,7 +113,7 @@ class IsoScene extends Phaser.Scene {
   }
 }
 
-const config: Phaser.Types.GameConfig = {
+const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
   scale: {

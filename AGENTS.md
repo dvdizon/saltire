@@ -77,6 +77,10 @@ When the user requests changes to the repo root `AGENTS.md`, automatically switc
 - For runtime changes, prefer:
   - `npm install`
   - `npm run dev`
+- For every agent-made change set, run the quick checks immediately after edits:
+  - `npm run typecheck`
+  - `npm run sanity`
+- If either quick check fails, resolve the issues before reporting back.
 - If you cannot run tests, state it in your PR or change notes.
 
 ### Documentation

@@ -8,10 +8,21 @@ export const TILE_H = 32
 const ENTITY_RADIUS = 10
 const ENTITY_Y_OFFSET = TILE_H * 0.3
 const HUD_MARGIN = 16
-const HUD_WIDTH = 160
-const HUD_HEIGHT = 12
 const MINI_MAP_SIZE = 120
 const MINI_MAP_PADDING = 10
+const INFO_PANEL_MARGIN = 16
+const INFO_PANEL_WIDTH = 220
+const INFO_PANEL_PADDING = 12
+const INFO_PANEL_ROW_HEIGHT = 18
+const INFO_PANEL_TITLE_HEIGHT = 20
+const INFO_PANEL_TITLE_SIZE = 16
+const INFO_PANEL_TEXT_SIZE = 14
+const INFO_PANEL_FOOTER_SIZE = 12
+const INFO_PANEL_DEPTH = 40
+const INFO_PANEL_HEALTH_BAR_WIDTH = 52
+const INFO_PANEL_HEALTH_BAR_HEIGHT = 6
+const INFO_PANEL_CLOSE_SIZE = 16
+const INFO_PANEL_ICON_SIZE = 22
 const WALL_HEIGHT = TILE_H
 const FOG_COLOR = 0x0b1120
 const FOG_ALPHA = 0.78
@@ -71,6 +82,14 @@ export function screenToGrid(
 // Responsible for drawing the world, entities, and HUD each frame.
 export class IsoRenderer {
   private exploredTiles = new Set<string>()
+  private infoPanelVisible = true
+  private infoPanelTitle?: Phaser.GameObjects.Text
+  private infoPanelLines: Phaser.GameObjects.Text[] = []
+  private infoPanelFooter?: Phaser.GameObjects.Text
+  private infoButtonZone?: Phaser.GameObjects.Zone
+  private infoButtonText?: Phaser.GameObjects.Text
+  private closeButtonZone?: Phaser.GameObjects.Zone
+  private closeButtonText?: Phaser.GameObjects.Text
 
   // Graphics is reused; world/entities are pulled live every render.
   constructor(
@@ -89,7 +108,7 @@ export class IsoRenderer {
     this.drawHover(visibility)
     this.drawMoveHints(visibility)
     this.drawEntities(visibility)
-    this.drawHud()
+    this.drawInfoPanel()
     this.drawMiniMap(visibility)
   }
 
@@ -274,33 +293,95 @@ export class IsoRenderer {
     this.graphics.strokeRect(x - barWidth / 2, y, barWidth, barHeight)
   }
 
-  // HUD renders the player health at the bottom-left of the camera.
-  private drawHud(): void {
-    const player = this.getEntities().find((entity) => entity.type === 'player')
-    if (!player || player.health === undefined || player.maxHealth === undefined) {
+  // Info panel shows player stats; visible when data is provided.
+  private drawInfoPanel(): void {
+    const player = this.getEntities().find(
+      (entity) => entity.type === 'player',
+    ) as EntityWithInfoPanel | undefined
+    const infoPanel = player?.infoPanel
+
+    if (!player || !infoPanel || infoPanel.stats.length === 0) {
+      this.setInfoPanelVisibility(false)
+      this.setInfoButtonVisibility(false)
       return
     }
 
-    const { height } = this.getViewportSize()
+    const showPanel = this.infoPanelVisible && infoPanel.visible !== false
+    this.ensureInfoPanelControls()
+    this.setInfoButtonVisibility(!showPanel)
+
+    if (!showPanel) {
+      this.setInfoPanelVisibility(false)
+      this.drawInfoButton()
+      return
+    }
+
+    this.setInfoPanelVisibility(true)
+
     const camera = this.graphics.scene.cameras.main
-    const hudX = camera.scrollX + HUD_MARGIN
-    const hudY = camera.scrollY + height - HUD_MARGIN - HUD_HEIGHT
+    const rowCount = infoPanel.stats.length + (infoPanel.footer ? 1 : 0)
+    const panelHeight =
+      INFO_PANEL_PADDING * 2 + INFO_PANEL_TITLE_HEIGHT + rowCount * INFO_PANEL_ROW_HEIGHT
+    const { height } = this.getViewportSize()
+    const panelX = camera.scrollX + INFO_PANEL_MARGIN
+    const panelY = camera.scrollY + height - INFO_PANEL_MARGIN - panelHeight
 
-    const ratio = player.maxHealth > 0 ? player.health / player.maxHealth : 0
-    const filledWidth = Math.max(0, Math.min(HUD_WIDTH, HUD_WIDTH * ratio))
-    const color = this.lerpColor(0xef4444, 0x22c55e, ratio)
+    this.graphics.fillStyle(0x0b1120, 0.82)
+    this.graphics.fillRect(panelX, panelY, INFO_PANEL_WIDTH, panelHeight)
+    this.graphics.lineStyle(1, 0xffffff, 0.25)
+    this.graphics.strokeRect(panelX, panelY, INFO_PANEL_WIDTH, panelHeight)
 
-    this.graphics.fillStyle(0x0f172a, 0.7)
-    this.graphics.fillRect(hudX - 8, hudY - 8, HUD_WIDTH + 16, HUD_HEIGHT + 16)
-    this.graphics.lineStyle(1, 0xffffff, 0.4)
-    this.graphics.strokeRect(hudX - 8, hudY - 8, HUD_WIDTH + 16, HUD_HEIGHT + 16)
+    this.drawInfoPanelClose(panelX, panelY)
 
-    this.graphics.fillStyle(0x111827, 0.95)
-    this.graphics.fillRect(hudX, hudY, HUD_WIDTH, HUD_HEIGHT)
-    this.graphics.fillStyle(color, 1)
-    this.graphics.fillRect(hudX, hudY, filledWidth, HUD_HEIGHT)
-    this.graphics.lineStyle(1, 0x000000, 0.6)
-    this.graphics.strokeRect(hudX, hudY, HUD_WIDTH, HUD_HEIGHT)
+    this.graphics.lineStyle(1, 0xffffff, 0.12)
+    this.graphics.lineBetween(
+      panelX + INFO_PANEL_PADDING,
+      panelY + INFO_PANEL_PADDING + INFO_PANEL_TITLE_HEIGHT - 4,
+      panelX + INFO_PANEL_WIDTH - INFO_PANEL_PADDING,
+      panelY + INFO_PANEL_PADDING + INFO_PANEL_TITLE_HEIGHT - 4,
+    )
+
+    this.ensureInfoPanelText(infoPanel.stats.length, Boolean(infoPanel.footer))
+    this.positionInfoPanelControls(panelX, panelY)
+
+    if (this.infoPanelTitle) {
+      this.infoPanelTitle.setText(infoPanel.title || 'Status')
+      this.infoPanelTitle.setPosition(panelX + INFO_PANEL_PADDING, panelY + INFO_PANEL_PADDING - 2)
+    }
+
+    let rowY = panelY + INFO_PANEL_PADDING + INFO_PANEL_TITLE_HEIGHT
+
+    infoPanel.stats.forEach((stat, index) => {
+      const text = this.infoPanelLines[index]
+      if (!text) {
+        return
+      }
+
+      const value = typeof stat.value === 'function' ? stat.value() : stat.value
+      text.setText(`${stat.label}: ${value}`)
+      text.setPosition(panelX + INFO_PANEL_PADDING, rowY)
+      text.setVisible(true)
+
+      if (stat.label === 'Health') {
+        this.drawInfoPanelHealthBar(player, panelX, rowY)
+      }
+
+      rowY += INFO_PANEL_ROW_HEIGHT
+    })
+
+    for (let index = infoPanel.stats.length; index < this.infoPanelLines.length; index += 1) {
+      this.infoPanelLines[index].setVisible(false)
+    }
+
+    if (this.infoPanelFooter) {
+      if (infoPanel.footer) {
+        this.infoPanelFooter.setText(infoPanel.footer)
+        this.infoPanelFooter.setPosition(panelX + INFO_PANEL_PADDING, rowY)
+        this.infoPanelFooter.setVisible(true)
+      } else {
+        this.infoPanelFooter.setVisible(false)
+      }
+    }
   }
 
   // Mini-map shows the world overview anchored to the camera.
@@ -536,10 +617,195 @@ export class IsoRenderer {
   private updateExplored(visibleTiles: Set<string>): void {
     visibleTiles.forEach((key) => this.exploredTiles.add(key))
   }
+
+  private drawInfoPanelClose(panelX: number, panelY: number): void {
+    const closeX = panelX + INFO_PANEL_WIDTH - INFO_PANEL_PADDING - INFO_PANEL_CLOSE_SIZE
+    const closeY = panelY + INFO_PANEL_PADDING - 4
+
+    this.graphics.fillStyle(0x111827, 0.95)
+    this.graphics.fillRect(closeX, closeY, INFO_PANEL_CLOSE_SIZE, INFO_PANEL_CLOSE_SIZE)
+    this.graphics.lineStyle(1, 0xffffff, 0.35)
+    this.graphics.strokeRect(closeX, closeY, INFO_PANEL_CLOSE_SIZE, INFO_PANEL_CLOSE_SIZE)
+  }
+
+  private drawInfoButton(): void {
+    const { height } = this.getViewportSize()
+    const camera = this.graphics.scene.cameras.main
+    const buttonX = camera.scrollX + INFO_PANEL_MARGIN
+    const buttonY = camera.scrollY + height - INFO_PANEL_MARGIN - INFO_PANEL_ICON_SIZE
+
+    this.graphics.fillStyle(0x0b1120, 0.82)
+    this.graphics.fillRect(buttonX, buttonY, INFO_PANEL_ICON_SIZE, INFO_PANEL_ICON_SIZE)
+    this.graphics.lineStyle(1, 0xffffff, 0.35)
+    this.graphics.strokeRect(buttonX, buttonY, INFO_PANEL_ICON_SIZE, INFO_PANEL_ICON_SIZE)
+
+    this.positionInfoButton(buttonX, buttonY)
+  }
+
+  private drawInfoPanelHealthBar(player: IEntity, panelX: number, rowY: number): void {
+    if (player.health === undefined || player.maxHealth === undefined) {
+      return
+    }
+
+    const ratio = player.maxHealth > 0 ? player.health / player.maxHealth : 0
+    const filledWidth = Math.max(0, Math.min(INFO_PANEL_HEALTH_BAR_WIDTH, INFO_PANEL_HEALTH_BAR_WIDTH * ratio))
+    const barX =
+      panelX + INFO_PANEL_WIDTH - INFO_PANEL_PADDING - INFO_PANEL_HEALTH_BAR_WIDTH
+    const barY = rowY + 5
+
+    this.graphics.fillStyle(0x0f172a, 0.9)
+    this.graphics.fillRect(barX, barY, INFO_PANEL_HEALTH_BAR_WIDTH, INFO_PANEL_HEALTH_BAR_HEIGHT)
+    this.graphics.fillStyle(0x22c55e, 1)
+    this.graphics.fillRect(barX, barY, filledWidth, INFO_PANEL_HEALTH_BAR_HEIGHT)
+    this.graphics.lineStyle(1, 0x000000, 0.5)
+    this.graphics.strokeRect(barX, barY, INFO_PANEL_HEALTH_BAR_WIDTH, INFO_PANEL_HEALTH_BAR_HEIGHT)
+  }
+
+  private ensureInfoPanelText(statCount: number, hasFooter: boolean): void {
+    const scene = this.graphics.scene
+
+    if (!this.infoPanelTitle) {
+      this.infoPanelTitle = scene.add
+        .text(0, 0, '', {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: `${INFO_PANEL_TITLE_SIZE}px`,
+          color: '#f8fafc',
+        })
+        .setDepth(INFO_PANEL_DEPTH)
+    }
+
+    while (this.infoPanelLines.length < statCount) {
+      const text = scene.add
+        .text(0, 0, '', {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: `${INFO_PANEL_TEXT_SIZE}px`,
+          color: '#e2e8f0',
+        })
+        .setDepth(INFO_PANEL_DEPTH)
+      this.infoPanelLines.push(text)
+    }
+
+    if (hasFooter && !this.infoPanelFooter) {
+      this.infoPanelFooter = scene.add
+        .text(0, 0, '', {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: `${INFO_PANEL_FOOTER_SIZE}px`,
+          color: '#94a3b8',
+        })
+        .setDepth(INFO_PANEL_DEPTH)
+    }
+  }
+
+  private ensureInfoPanelControls(): void {
+    const scene = this.graphics.scene
+
+    if (!this.infoButtonZone) {
+      this.infoButtonZone = scene.add
+        .zone(0, 0, INFO_PANEL_ICON_SIZE, INFO_PANEL_ICON_SIZE)
+        .setOrigin(0, 0)
+        .setDepth(INFO_PANEL_DEPTH)
+        .setInteractive({ useHandCursor: true })
+      this.infoButtonZone.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation()
+        this.infoPanelVisible = true
+      })
+    }
+
+    if (!this.infoButtonText) {
+      this.infoButtonText = scene.add
+        .text(0, 0, 'i', {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '14px',
+          color: '#f8fafc',
+        })
+        .setDepth(INFO_PANEL_DEPTH + 1)
+    }
+
+    if (!this.closeButtonZone) {
+      this.closeButtonZone = scene.add
+        .zone(0, 0, INFO_PANEL_CLOSE_SIZE, INFO_PANEL_CLOSE_SIZE)
+        .setOrigin(0, 0)
+        .setDepth(INFO_PANEL_DEPTH)
+        .setInteractive({ useHandCursor: true })
+      this.closeButtonZone.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation()
+        this.infoPanelVisible = false
+      })
+    }
+
+    if (!this.closeButtonText) {
+      this.closeButtonText = scene.add
+        .text(0, 0, 'x', {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: '12px',
+          color: '#e2e8f0',
+        })
+        .setDepth(INFO_PANEL_DEPTH + 1)
+    }
+  }
+
+  private setInfoPanelVisibility(visible: boolean): void {
+    this.infoPanelTitle?.setVisible(visible)
+    this.infoPanelLines.forEach((line) => line.setVisible(visible))
+    this.infoPanelFooter?.setVisible(visible)
+    this.closeButtonText?.setVisible(visible)
+    const closeZone = this.closeButtonZone
+    if (closeZone) {
+      closeZone.setVisible(visible)
+      closeZone.setActive(visible)
+    }
+  }
+
+  private setInfoButtonVisibility(visible: boolean): void {
+    this.infoButtonText?.setVisible(visible)
+    const infoZone = this.infoButtonZone
+    if (infoZone) {
+      infoZone.setVisible(visible)
+      infoZone.setActive(visible)
+    }
+  }
+
+  private positionInfoPanelControls(panelX: number, panelY: number): void {
+    const closeX = panelX + INFO_PANEL_WIDTH - INFO_PANEL_PADDING - INFO_PANEL_CLOSE_SIZE
+    const closeY = panelY + INFO_PANEL_PADDING - 4
+
+    this.closeButtonZone?.setPosition(closeX, closeY)
+    this.closeButtonZone?.setSize(INFO_PANEL_CLOSE_SIZE, INFO_PANEL_CLOSE_SIZE)
+    if (this.closeButtonText) {
+      this.closeButtonText.setText('x')
+      this.closeButtonText.setPosition(closeX + 4, closeY - 1)
+    }
+
+  }
+
+  private positionInfoButton(buttonX: number, buttonY: number): void {
+    this.infoButtonZone?.setPosition(buttonX, buttonY)
+    this.infoButtonZone?.setSize(INFO_PANEL_ICON_SIZE, INFO_PANEL_ICON_SIZE)
+    if (this.infoButtonText) {
+      this.infoButtonText.setPosition(buttonX + 7, buttonY + 3)
+    }
+  }
+
 }
 
 type VisibilityState = {
   hasFog: boolean
   isVisible: (row: number, col: number) => boolean
   isExplored: (row: number, col: number) => boolean
+}
+
+type InfoPanelStat = {
+  label: string
+  value: string | number | (() => string | number)
+}
+
+type InfoPanelData = {
+  title: string
+  stats: InfoPanelStat[]
+  footer?: string
+  visible?: boolean
+}
+
+type EntityWithInfoPanel = IEntity & {
+  infoPanel?: InfoPanelData
 }
