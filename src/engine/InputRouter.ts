@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { IEntity, IInputRouter, IWorld, TileSelectedCallback, EntityTappedCallback } from '../types'
 import { screenToGrid, TILE_H } from './IsoRenderer'
 
+// Bridges Phaser pointer input to grid-level game events.
 export class InputRouter implements IInputRouter {
   private tileSelectedCallbacks: TileSelectedCallback[] = []
   private entityTappedCallbacks: EntityTappedCallback[] = []
@@ -13,6 +14,7 @@ export class InputRouter implements IInputRouter {
     active: boolean
   } | null = null
 
+  // Register pointer listeners once; handlers convert screen -> grid.
   constructor(
     private scene: Phaser.Scene,
     private world: IWorld,
@@ -23,14 +25,17 @@ export class InputRouter implements IInputRouter {
     this.scene.input.on('pointerup', this.handlePointerUp)
   }
 
+  // Allow multiple listeners for tile selection.
   onTileSelected(callback: TileSelectedCallback): void {
     this.tileSelectedCallbacks.push(callback)
   }
 
+  // Allow multiple listeners for entity taps.
   onEntityTapped(callback: EntityTappedCallback): void {
     this.entityTappedCallbacks.push(callback)
   }
 
+  // Capture drag start so we can distinguish taps from pans.
   private handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
     this.dragState = {
       startX: pointer.x,
@@ -41,6 +46,7 @@ export class InputRouter implements IInputRouter {
     }
   }
 
+  // Drag to pan the camera; otherwise just update hover cursor.
   private handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
     if (this.handleDrag(pointer)) {
       return
@@ -49,6 +55,7 @@ export class InputRouter implements IInputRouter {
     this.updateHoverCursor(pointer)
   }
 
+  // Convert a tap into tile/entity callbacks if not dragging.
   private handlePointerUp = (pointer: Phaser.Input.Pointer): void => {
     const wasDragging = this.dragState?.active ?? false
     this.dragState = null
@@ -67,6 +74,7 @@ export class InputRouter implements IInputRouter {
       return
     }
 
+    // Fire entity callbacks before tile callbacks so combat logic can react.
     const entity = this.getEntities().find(
       (candidate) => candidate.position.row === row && candidate.position.col === col,
     )
@@ -78,6 +86,7 @@ export class InputRouter implements IInputRouter {
     this.tileSelectedCallbacks.forEach((callback) => callback(row, col))
   }
 
+  // Dragging pans the camera; returns true if a drag is in progress.
   private handleDrag(pointer: Phaser.Input.Pointer): boolean {
     if (!this.dragState || !pointer.isDown) {
       return false
@@ -106,6 +115,7 @@ export class InputRouter implements IInputRouter {
     return true
   }
 
+  // Update cursor to signal interactive tiles/entities.
   private updateHoverCursor(pointer: Phaser.Input.Pointer): void {
     const { width, height } = this.scene.scale
     const { originX, originY } = this.getOrigin(width, height)
@@ -129,6 +139,7 @@ export class InputRouter implements IInputRouter {
     this.scene.input.setDefaultCursor('default')
   }
 
+  // Recompute origin so screen-to-grid math stays centered.
   private getOrigin(screenWidth: number, screenHeight: number): {
     originX: number
     originY: number

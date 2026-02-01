@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import { AssetManifest, AssetType, IAssetLoader } from '../types'
 
+// Map each manifest entry type to the matching Phaser loader call.
 const loadHandlers: Record<AssetType, (scene: Phaser.Scene, entry: any) => void> = {
   image: (scene, entry) => {
     scene.load.image(entry.key, entry.path)
@@ -16,22 +17,26 @@ const loadHandlers: Record<AssetType, (scene: Phaser.Scene, entry: any) => void>
   },
 }
 
+// Thin wrapper that loads a manifest and caches asset lookups.
 export class AssetLoader implements IAssetLoader {
   private cache = new Map<string, unknown>()
 
   constructor(private scene: Phaser.Scene) {}
 
+  // Load all manifest entries, resolving when Phaser finishes.
   load(manifest: AssetManifest): Promise<void> {
     if (manifest.length === 0) {
       return Promise.resolve()
     }
 
+    // Register all assets before starting the loader.
     manifest.forEach((entry) => {
       loadHandlers[entry.type](this.scene, entry)
     })
 
     return new Promise((resolve) => {
       this.scene.load.once('complete', () => {
+        // Cache loaded assets for quick retrieval.
         manifest.forEach((entry) => {
           this.cache.set(entry.key, this.lookupAsset(entry.key, entry.type))
         })
@@ -45,6 +50,7 @@ export class AssetLoader implements IAssetLoader {
     return this.cache.get(key)
   }
 
+  // Look up assets in Phaser's caches based on asset type.
   private lookupAsset(key: string, type: AssetType): unknown {
     switch (type) {
       case 'audio':

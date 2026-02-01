@@ -37,6 +37,7 @@ const ENTITY_COLORS: Record<string, number> = {
   npc: 0xfbbf24,
 }
 
+// Convert grid coordinates into isometric screen space.
 export function gridToScreen(
   row: number,
   col: number,
@@ -49,6 +50,7 @@ export function gridToScreen(
   }
 }
 
+// Convert screen coordinates back into the nearest grid cell.
 export function screenToGrid(
   screenX: number,
   screenY: number,
@@ -64,9 +66,11 @@ export function screenToGrid(
   }
 }
 
+// Responsible for drawing the world, entities, and HUD each frame.
 export class IsoRenderer {
   private exploredTiles = new Set<string>()
 
+  // Graphics is reused; world/entities are pulled live every render.
   constructor(
     private graphics: Phaser.GameObjects.Graphics,
     private world: IWorld,
@@ -75,6 +79,7 @@ export class IsoRenderer {
     private screenHeight: number,
   ) {}
 
+  // Clear and redraw everything in a consistent order each frame.
   render(): void {
     this.graphics.clear()
     const visibility = this.getVisibility()
@@ -85,6 +90,7 @@ export class IsoRenderer {
     this.drawHud()
   }
 
+  // Draw terrain tiles with fog-of-war overlays.
   private drawTiles(visibility: VisibilityState): void {
     const { originX, originY } = this.getOrigin()
 
@@ -104,6 +110,7 @@ export class IsoRenderer {
           continue
         }
 
+        // Walls are drawn with height; all other tiles are flat diamonds.
         if (tile.terrain === 'wall') {
           this.drawWallTile(x, y)
         } else {
@@ -120,6 +127,7 @@ export class IsoRenderer {
           this.graphics.strokePath()
         }
 
+        // Explored-but-not-visible tiles get a dim overlay.
         if (!visible && visibility.hasFog && explored) {
           this.drawExploredTile(x, y)
         }
@@ -127,6 +135,7 @@ export class IsoRenderer {
     }
   }
 
+  // Highlight the player's adjacent passable tiles for quick movement cues.
   private drawMoveHints(visibility: VisibilityState): void {
     const player = this.getEntities().find((entity) => entity.type === 'player')
     if (!player) {
@@ -150,6 +159,7 @@ export class IsoRenderer {
       const { x, y } = gridToScreen(hint.row, hint.col, originX, originY)
       const hintColor = this.getContrastColor(TERRAIN_COLORS[tile.terrain])
 
+      // Pulse the outline to indicate selectable movement.
       this.graphics.lineStyle(2, hintColor, pulse)
       this.graphics.fillStyle(hintColor, pulse * 0.35)
       this.graphics.beginPath()
@@ -163,6 +173,7 @@ export class IsoRenderer {
     }
   }
 
+  // Draw a hover outline for the tile under the cursor when visible.
   private drawHover(visibility: VisibilityState): void {
     const pointer = this.graphics.scene.input.activePointer
     if (!pointer) {
@@ -206,6 +217,7 @@ export class IsoRenderer {
     }
   }
 
+  // Draw entities after tiles so they sit "on top" visually.
   private drawEntities(visibility: VisibilityState): void {
     const { originX, originY } = this.getOrigin()
     const entities = [...this.getEntities()].sort(
@@ -234,10 +246,12 @@ export class IsoRenderer {
         this.graphics.strokeCircle(x, entityY, ENTITY_RADIUS + 4)
       }
 
+      // Health bars are optional so non-combat entities stay clean.
       this.drawEntityHealth(entity, x, entityY - ENTITY_RADIUS - 10)
     }
   }
 
+  // Simple bar that reflects current vs max health.
   private drawEntityHealth(entity: IEntity, x: number, y: number): void {
     if (entity.health === undefined || entity.maxHealth === undefined) {
       return
@@ -257,6 +271,7 @@ export class IsoRenderer {
     this.graphics.strokeRect(x - barWidth / 2, y, barWidth, barHeight)
   }
 
+  // HUD renders the player health at the bottom-left of the camera.
   private drawHud(): void {
     const player = this.getEntities().find((entity) => entity.type === 'player')
     if (!player || player.health === undefined || player.maxHealth === undefined) {
@@ -285,6 +300,7 @@ export class IsoRenderer {
     this.graphics.strokeRect(hudX, hudY, HUD_WIDTH, HUD_HEIGHT)
   }
 
+  // Draw a faux-3D wall block to make obstacles feel taller.
   private drawWallTile(x: number, y: number): void {
     const top = { x, y: y - WALL_HEIGHT }
     const right = { x: x + TILE_W / 2, y: y + TILE_H / 2 - WALL_HEIGHT }
@@ -332,6 +348,7 @@ export class IsoRenderer {
     this.graphics.strokePath()
   }
 
+  // Full fog tile for unexplored, unseen areas.
   private drawFogTile(x: number, y: number): void {
     this.graphics.fillStyle(FOG_COLOR, FOG_ALPHA)
     this.graphics.beginPath()
@@ -343,6 +360,7 @@ export class IsoRenderer {
     this.graphics.fillPath()
   }
 
+  // Dimmed overlay for explored but currently unseen tiles.
   private drawExploredTile(x: number, y: number): void {
     this.graphics.fillStyle(FOG_EXPLORED_COLOR, FOG_EXPLORED_ALPHA)
     this.graphics.beginPath()
@@ -354,6 +372,7 @@ export class IsoRenderer {
     this.graphics.fillPath()
   }
 
+  // Cardinal neighbors used for movement hint visualization.
   private getCardinalNeighbors(row: number, col: number): { row: number; col: number }[] {
     return [
       { row: row - 1, col },
@@ -363,12 +382,14 @@ export class IsoRenderer {
     ]
   }
 
+  // Pulse helper for small UI animations.
   private getPulse(min: number, max: number, speedMs: number): number {
     const time = performance.now()
     const normalized = (Math.sin(time / speedMs) + 1) / 2
     return min + (max - min) * normalized
   }
 
+  // Linear interpolate between two hex colors.
   private lerpColor(start: number, end: number, t: number): number {
     const clamped = Math.max(0, Math.min(1, t))
     const sr = (start >> 16) & 0xff
@@ -385,6 +406,7 @@ export class IsoRenderer {
     return (rr << 16) + (rg << 8) + rb
   }
 
+  // Compute a readable overlay color for the given terrain.
   private getContrastColor(color: number): number {
     const r = (color >> 16) & 0xff
     const g = (color >> 8) & 0xff
@@ -396,6 +418,7 @@ export class IsoRenderer {
     return (ir << 16) + (ig << 8) + ib
   }
 
+  // Center the grid in the current viewport.
   private getOrigin(): { originX: number; originY: number } {
     const { width, height } = this.getViewportSize()
     const totalHeight = (this.world.rows + this.world.cols) * (TILE_H / 2)
@@ -406,6 +429,7 @@ export class IsoRenderer {
     }
   }
 
+  // Respect Phaser's scale values but fall back to constructor defaults.
   private getViewportSize(): { width: number; height: number } {
     const { width, height } = this.graphics.scene.scale
 
@@ -415,6 +439,7 @@ export class IsoRenderer {
     }
   }
 
+  // Build a visibility state from the player's position.
   private getVisibility(): VisibilityState {
     const player = this.getEntities().find((entity) => entity.type === 'player')
     if (!player) {
@@ -435,6 +460,7 @@ export class IsoRenderer {
     }
   }
 
+  // Track explored tiles so fog fades but does not fully reset.
   private updateExplored(visibleTiles: Set<string>): void {
     visibleTiles.forEach((key) => this.exploredTiles.add(key))
   }
