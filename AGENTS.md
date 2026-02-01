@@ -87,6 +87,7 @@ When the user requests changes to the repo root `AGENTS.md`, automatically switc
 ### Documentation
 - Update docs alongside code. If behavior changes, update `README.md` and/or `docs/`.
 - Keep documentation concise and in plain language.
+- After a one-time agent instruction has been completed (the user will explicitly designate it as one-time when introduced), move the file into `docs/deprecated-agents/` and rename it to `their-task-or-role.md`.
 
 ### Code quality
 - Favor clarity over cleverness.
