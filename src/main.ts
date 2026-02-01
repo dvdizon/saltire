@@ -10,11 +10,14 @@ class IsoScene extends Phaser.Scene {
   private inputRouter!: InputRouter
   private gameScene!: GameScene
   private isoRenderer!: IsoRenderer
+  private endOverlay?: Phaser.GameObjects.Container
   private endText?: Phaser.GameObjects.Text
   private restartText?: Phaser.GameObjects.Text
 
   create(): void {
-    this.world = new World(10, 10)
+    const mapRows = MAP_TERRAIN.length
+    const mapCols = MAP_TERRAIN[0]?.length ?? mapRows
+    this.world = new World(mapRows, mapCols)
     this.world.loadMap(MAP_TERRAIN)
 
     this.entities = INITIAL_ENTITIES.map((spawn, index) =>
@@ -51,50 +54,62 @@ class IsoScene extends Phaser.Scene {
     if (this.gameScene.isOver()) {
       this.showEndOverlay()
     }
+
+    if (this.endOverlay) {
+      this.updateEndOverlayPosition()
+    }
   }
 
   private showEndOverlay(): void {
-    if (this.endText) {
+    if (this.endOverlay) {
       return
     }
 
     const result = this.gameScene.getResult()
     const message = result === 'win' ? 'YOU WIN' : 'YOU LOSE'
 
+    const panelWidth = 360
+    const panelHeight = 140
+    const panel = this.add.rectangle(0, 0, panelWidth, panelHeight, 0x0b1120, 0.9)
+    panel.setStrokeStyle(2, 0xe2e8f0, 0.4)
+
     this.endText = this.add
-      .text(this.cameras.main.centerX, this.cameras.main.centerY - 20, message, {
+      .text(0, -18, message, {
         fontFamily: 'Arial, sans-serif',
-        fontSize: '48px',
-        color: '#ffffff'
+        fontSize: '42px',
+        color: '#f8fafc'
       })
       .setOrigin(0.5)
 
     this.restartText = this.add
-      .text(
-        this.cameras.main.centerX,
-        this.cameras.main.centerY + 24,
-        'Refresh the page to restart',
-        {
-          fontFamily: 'Arial, sans-serif',
-          fontSize: '18px',
-          color: '#c7c7c7'
-        }
-      )
+      .text(0, 24, 'Refresh the page to restart', {
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '18px',
+        color: '#e2e8f0'
+      })
       .setOrigin(0.5)
+
+    this.endOverlay = this.add.container(0, 0, [panel, this.endText, this.restartText])
+    this.endOverlay.setDepth(1000)
+    this.updateEndOverlayPosition()
   }
 
   private handleResize = (gameSize: { width: number; height: number }): void => {
     const { width, height } = gameSize
     this.cameras.main.setViewport(0, 0, width, height)
     this.cameras.main.setSize(width, height)
+    this.updateEndOverlayPosition()
+  }
 
-    if (this.endText) {
-      this.endText.setPosition(this.cameras.main.centerX, this.cameras.main.centerY - 20)
+  private updateEndOverlayPosition(): void {
+    if (!this.endOverlay) {
+      return
     }
 
-    if (this.restartText) {
-      this.restartText.setPosition(this.cameras.main.centerX, this.cameras.main.centerY + 24)
-    }
+    const camera = this.cameras.main
+    const centerX = camera.scrollX + camera.width / 2
+    const centerY = camera.scrollY + camera.height / 2
+    this.endOverlay.setPosition(centerX, centerY)
   }
 }
 
@@ -111,3 +126,4 @@ const config: Phaser.Types.GameConfig = {
 }
 
 new Phaser.Game(config)
+
