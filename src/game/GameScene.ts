@@ -23,14 +23,11 @@ export function applyAction(
   onPlayerDamaged?: () => void,
   onAction?: (action: GameAction) => void
 ): void {
-  if (onAction) {
-    onAction(action)
-  }
-
   if (action.kind === 'move') {
     const entity = entities.find((e) => e.id === action.entityId)
     if (entity) {
       entity.position = action.to
+      onAction?.(action)
     }
   } else if (action.kind === 'attack') {
     const target = entities.find((e) => e.id === action.targetId)
@@ -39,11 +36,13 @@ export function applyAction(
       if (target.type === 'player' && onPlayerDamaged) {
         onPlayerDamaged()
       }
+      onAction?.(action)
     }
   } else if (action.kind === 'remove') {
     const index = entities.findIndex((e) => e.id === action.entityId)
     if (index >= 0) {
       entities.splice(index, 1)
+      onAction?.(action)
     }
   }
 }
