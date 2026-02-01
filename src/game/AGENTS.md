@@ -12,6 +12,19 @@ Project scaffolding and shared types are already established. Do not modify conf
 
 -----
 
+## Worktrees (Required)
+
+- Start every change by creating a git worktree under `.worktrees` at the repo root.
+- Use the naming convention `<YYYY-MM-DD-description>` for the worktree directory.
+- Do all work from that worktree directory, not the main working directory.
+
+Example:
+```powershell
+git worktree add .worktrees/2026-02-01-map-data-tuning -b chore/2026-02-01-map-data-tuning origin/main
+```
+
+-----
+
 ## Context You Need
 
 The goal of this prototype is to prove a developer can build a playable isometric game quickly. The game layer should be small but complete: a grid map, a player unit, a few enemy units, turn-based movement, basic combat, and win/lose conditions.

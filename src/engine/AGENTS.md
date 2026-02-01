@@ -14,6 +14,19 @@ Project scaffolding and shared types are already established. Do not modify conf
 
 ---
 
+## Worktrees (Required)
+
+- Start every change by creating a git worktree under `.worktrees` at the repo root.
+- Use the naming convention `<YYYY-MM-DD-description>` for the worktree directory.
+- Do all work from that worktree directory, not the main working directory.
+
+Example:
+```powershell
+git worktree add .worktrees/2026-02-01-input-router-fix -b chore/2026-02-01-input-router-fix origin/main
+```
+
+---
+
 ## Context You Need
 
 The engine sits on top of Phaser 3 and provides structure for isometric, tile-based, turn-oriented strategy games. The mental model is simple: a **World** (the grid), **Entities** (things in the grid), and a **GameLoop** (the heartbeat that keeps everything moving). An **InputRouter** translates touch/mouse into grid events. An **AssetLoader** wraps Phaser's loader. An **IsoRenderer** draws everything using Phaser's Graphics object — no external sprites, no sprite sheets. Colored shapes on an isometric grid.
