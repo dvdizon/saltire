@@ -40,7 +40,8 @@ When the user requests changes to the repo root `AGENTS.md`, automatically switc
 - The shared contracts in `src/types.ts` are the source of truth for interfaces. Avoid changes unless coordinated.
 
 ### Branching and history
-- Start every change by creating a git worktree under `.worktrees/<YYYY-MM-DD-description>` and do all work from that worktree.
+- Only use the git worktree workflow when running in the Codex CLI or the VS Code plugin. Skip worktrees for Codex web/mobile because diffs in worktrees are not visible there.
+- When using the worktree workflow, start every change by creating a git worktree under `.worktrees/<YYYY-MM-DD-description>` and do all work from that worktree.
   Example:
   ```powershell
   git worktree add .worktrees/2026-02-01-docs-cleanup -b chore/2026-02-01-docs-cleanup origin/main
