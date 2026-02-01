@@ -4,6 +4,16 @@ import { TurnManager } from './TurnManager'
 const DEFAULT_PLAYER_HEALTH = 5
 const DEFAULT_ENEMY_HEALTH = 2
 const DAMAGE_PER_HIT = 1
+const PLAYER_SPEED = 3
+
+type InfoPanelStat = { label: string; value: string | number }
+type InfoPanelData = {
+  title: string
+  stats: InfoPanelStat[]
+  footer?: string
+  visible?: boolean
+}
+type EntityWithInfoPanel = IEntity & { infoPanel?: InfoPanelData }
 
 // GameScene wires game rules to engine-provided world, input, and entities.
 export class GameScene implements IGameScene {
@@ -22,6 +32,9 @@ export class GameScene implements IGameScene {
     this.entities = entities
     this.player = this.entities.find((entity) => entity.type === 'player') ?? null
     this.entities.forEach((entity) => this.ensureEntityHealth(entity))
+    if (this.player) {
+      this.setupPlayerInfoPanel(this.player as EntityWithInfoPanel)
+    }
 
     this.inputRouter.onTileSelected((row, col) => {
       // Tapping an enemy also triggers a tile select; ignore the follow-up.
@@ -57,16 +70,16 @@ export class GameScene implements IGameScene {
     })
 
     this.inputRouter.onEntityTapped((entity) => {
-      if (!this.turnManager.isPlayerTurn() || this.result !== 'playing') {
-        return
-      }
-
       if (!this.player || entity.type !== 'enemy') {
         return
       }
 
       // Only allow melee attacks against adjacent enemies.
       if (!this.isAdjacent(this.player.position.row, this.player.position.col, entity.position.row, entity.position.col)) {
+        return
+      }
+
+      if (!this.turnManager.isPlayerTurn() || this.result !== 'playing') {
         return
       }
 
@@ -204,6 +217,10 @@ export class GameScene implements IGameScene {
   private applyDamage(target: IEntity, amount: number): void {
     const currentHealth = target.health ?? target.maxHealth ?? 0
     target.health = Math.max(0, currentHealth - amount)
+
+    if (this.player && target === this.player) {
+      this.refreshPlayerInfoPanel()
+    }
   }
 
   // Remove a defeated entity from play and let the engine clean it up.
@@ -227,4 +244,32 @@ export class GameScene implements IGameScene {
     entity.maxHealth = maxHealth
     entity.health = entity.health ?? maxHealth
   }
+
+  private setupPlayerInfoPanel(player: EntityWithInfoPanel): void {
+    const healthValue = `${player.health ?? 0}/${player.maxHealth ?? 0}`
+    player.infoPanel = {
+      title: 'Vanguard',
+      stats: [
+        { label: 'Health', value: healthValue },
+        { label: 'Attack', value: DAMAGE_PER_HIT },
+        { label: 'Speed', value: PLAYER_SPEED },
+      ],
+      footer: 'Tap info icon to toggle',
+      visible: true,
+    }
+  }
+
+  private refreshPlayerInfoPanel(): void {
+    const player = this.player as EntityWithInfoPanel | null
+    if (!player?.infoPanel) {
+      return
+    }
+
+    const healthValue = `${player.health ?? 0}/${player.maxHealth ?? 0}`
+    const healthStat = player.infoPanel.stats.find((stat) => stat.label === 'Health')
+    if (healthStat) {
+      healthStat.value = healthValue
+    }
+  }
+
 }
