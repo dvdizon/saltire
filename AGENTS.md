@@ -9,10 +9,8 @@ This repository uses agent-specific instruction files to keep scope, responsibil
 - Read `docs/CONTEXT.md` first. It defines the project intent, architecture, and decision framework.
 - If you are an AI agent, select exactly one role file to follow for this task:
   - `AGENTS.md` — General developer
-  - `agents/scaffolder-shared-types/AGENTS.md` — Scaffolder + shared types
-  - `agents/engine-core/AGENTS.md` — Engine core
-  - `agents/game-layer/AGENTS.md` — Game layer
-  - `agents/integration/AGENTS.md` — Integration + README
+  - `src/engine/AGENTS.md` — Engine core
+  - `src/game/AGENTS.md` — Game layer
 - Announce the role you are assuming and operate strictly within that scope.
 - If the task does not match a role, ask the user which role to use or request clarification.
 - Human override: if the user explicitly says they want to override role selection (e.g., “override roles for this request”), the agent should follow the user’s instructions and proceed without requesting a role, while still honoring all other repo policies and safety constraints.
@@ -25,11 +23,9 @@ If the user’s request spans multiple roles, the agent should proceed **sequent
 3) If more work remains in a different role, switch to the next role and continue.
 
 Default role order (unless the user specifies otherwise):
-1. `agents/game-layer/AGENTS.md`
-2. `agents/engine-core/AGENTS.md`
-3. `agents/integration/AGENTS.md`
-4. `agents/scaffolder-shared-types/AGENTS.md`
-5. `AGENTS.md`
+1. `src/game/AGENTS.md`
+2. `src/engine/AGENTS.md`
+3. `AGENTS.md`
 
 ### Exception: Top-Level AGENTS.md
 Edits to `AGENTS.md` at the repo root are allowed by any agent role. This file is the shared entry point and may be updated regardless of scope.

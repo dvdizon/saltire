@@ -1,5 +1,7 @@
 # Scaffolder + Shared Types Agent
 
+> DEPRECATED — This role defined the initial scaffold and shared types. Keep for historical reference only.
+
 ## Your Job: Project Scaffold + Shared Types
 
 You are building the skeleton that the other modules attach to. Four config files, one HTML shell, and one TypeScript file that defines every shared interface in the project. Nothing else.

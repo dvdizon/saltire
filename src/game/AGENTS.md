@@ -6,6 +6,12 @@ You are responsible for the playable demo game that sits on top of the engine. T
 
 -----
 
+## Scaffold Status (Deprecated)
+
+Project scaffolding and shared types are already established. Do not modify config files, `index.html`, or `src/types.ts` from this role. If a scaffold change is needed, call it out explicitly instead of making the change here.
+
+-----
+
 ## Context You Need
 
 The goal of this prototype is to prove a developer can build a playable isometric game quickly. The game layer should be small but complete: a grid map, a player unit, a few enemy units, turn-based movement, basic combat, and win/lose conditions.
