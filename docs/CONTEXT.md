@@ -79,6 +79,8 @@ When evaluating any feature, change, or addition — ask these questions in orde
 
 When working in this project — whether you're writing code, designing a feature, or working through a technical decision — treat the PRD and Architecture doc as the source of truth. If something you're considering isn't addressed by either document, that's a signal: either it belongs in the game layer (not here), or it's a gap worth calling out before moving forward.
 
+For new worktrees, you can use `scripts/create-worktree.ps1` to create the branch/worktree and copy `node_modules` into the worktree when available.
+
 Don't add complexity to the engine to solve a problem that only one game needs. Don't make the mental model harder to hold in order to gain flexibility nobody has asked for yet.
 
 The engine earns its place by being fast to learn and fast to build on. Everything else follows from that.

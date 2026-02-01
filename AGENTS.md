@@ -45,6 +45,19 @@ When the user requests changes to the repo root `AGENTS.md`, automatically switc
   ```powershell
   git worktree add .worktrees/2026-02-01-docs-cleanup -b chore/2026-02-01-docs-cleanup origin/main
   ```
+- After creating the worktree, if a `node_modules` directory exists in the main worktree, copy it into the new worktree to avoid reinstalling dependencies.
+  Example:
+  ```powershell
+  if (Test-Path .\node_modules) { Copy-Item -Recurse -Force .\node_modules .worktrees\2026-02-01-docs-cleanup\node_modules }
+  ```
+- Or use the helper script to do both steps in one command:
+  ```powershell
+  .\scripts\create-worktree.ps1 -Description docs-cleanup -Remote origin -BaseBranch main
+  ```
+- Bash version:
+  ```bash
+  ./scripts/create-worktree.sh docs-cleanup origin main
+  ```
 - Work on a dedicated branch created from an up-to-date `origin/main`.
 - Keep commits small and focused. One change set, one intent.
 - Do not rewrite published history on `main`.
