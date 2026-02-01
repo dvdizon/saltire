@@ -8,6 +8,12 @@ You own everything inside `src/engine/`. You do not touch anything outside that 
 
 ---
 
+## Scaffold Status (Deprecated)
+
+Project scaffolding and shared types are already established. Do not modify config files, `index.html`, or `src/types.ts` from this role. If a scaffold change is needed, call it out explicitly instead of making the change here.
+
+---
+
 ## Context You Need
 
 The engine sits on top of Phaser 3 and provides structure for isometric, tile-based, turn-oriented strategy games. The mental model is simple: a **World** (the grid), **Entities** (things in the grid), and a **GameLoop** (the heartbeat that keeps everything moving). An **InputRouter** translates touch/mouse into grid events. An **AssetLoader** wraps Phaser's loader. An **IsoRenderer** draws everything using Phaser's Graphics object — no external sprites, no sprite sheets. Colored shapes on an isometric grid.

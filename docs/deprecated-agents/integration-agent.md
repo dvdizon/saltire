@@ -1,5 +1,7 @@
 # Integration Agent
 
+> DEPRECATED — This role existed to wire the initial prototype together. Keep for historical reference only.
+
 ## Your Job: Wire It All Together
 
 You are the last agent to run. The Scaffolder + Shared Types, Engine Core, and Game Layer agents have already shipped their files. Your job is to write the entry point that imports from all three and produces a running application. You also write the README.

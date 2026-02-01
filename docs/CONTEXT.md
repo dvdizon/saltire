@@ -13,19 +13,14 @@ saltire/
 │   ├── CONTEXT.md              ← Start here
 │   ├── PRD_Game_Engine.md      ← What and why
 │   ├── Architecture_Engineering_Doc.md  ← How
-│   └── BUILD_PLAN.md           ← Execution plan
-├── agents/                     # Agent-specific instructions
-│   ├── scaffolder-shared-types/
-│   │   └── AGENTS.md
-│   ├── engine-core/
-│   │   └── AGENTS.md
-│   ├── game-layer/
-│   │   └── AGENTS.md
-│   └── integration/
-│       └── AGENTS.md
+│   ├── BUILD_PLAN.md           ← Execution plan
+│   └── deprecated-agents/      # Deprecated agent instructions
+│       ├── scaffolder-shared-types-agent.md
+│       └── integration-agent.md
 ├── src/
 │   ├── types.ts                # Shared type definitions
 │   ├── engine/                 # Core engine components
+│   │   └── AGENTS.md            # Engine core agent instructions
 │   │   ├── World.ts
 │   │   ├── Entity.ts
 │   │   ├── GameLoop.ts
@@ -34,6 +29,7 @@ saltire/
 │   │   ├── IsoRenderer.ts
 │   │   └── index.ts
 │   ├── game/                   # Game-layer code
+│   │   └── AGENTS.md            # Game layer agent instructions
 │   │   ├── MapData.ts
 │   │   ├── TurnManager.ts
 │   │   ├── GameScene.ts
@@ -91,11 +87,14 @@ The engine earns its place by being fast to learn and fast to build on. Everythi
 
 ## Agent Instructions
 
-The `agents/` directory contains role-specific instructions for AI agents working on this project:
+Active agent instructions live alongside the code they govern:
 
-- `agents/scaffolder-shared-types/AGENTS.md` — Project scaffolding and setup
-- `agents/engine-core/AGENTS.md` — Core engine implementation
-- `agents/game-layer/AGENTS.md` — Game-layer implementation
-- `agents/integration/AGENTS.md` — Integration and testing
+- `src/engine/AGENTS.md` — Core engine implementation
+- `src/game/AGENTS.md` — Game-layer implementation
+
+Deprecated agent instructions live in `docs/deprecated-agents/`:
+
+- `docs/deprecated-agents/scaffolder-shared-types-agent.md` — Project scaffolding and setup
+- `docs/deprecated-agents/integration-agent.md` — Integration and testing
 
 Each agent doc defines scope, responsibilities, and constraints for that role. Agents should read their specific doc along with this context and the two guiding documents.
