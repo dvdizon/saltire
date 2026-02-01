@@ -9,6 +9,20 @@ npm install
 npm run dev
 ```
 
+## Worktrees
+
+Use the helper script to create a worktree and copy `node_modules` when available:
+
+```powershell
+.\scripts\create-worktree.ps1 -Description docs-cleanup -Remote origin -BaseBranch main
+```
+
+Or on bash environments:
+
+```bash
+./scripts/create-worktree.sh docs-cleanup origin main
+```
+
 ## How to play the demo
 
 - Click/tap an adjacent tile to move (no diagonals).
