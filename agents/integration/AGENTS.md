@@ -1,8 +1,8 @@
-# Agent D — Integration
+# Integration Agent
 
 ## Your Job: Wire It All Together
 
-You are the last agent to run. Agents A, B, and C have already shipped their files. Your job is to write the entry point that imports from all three and produces a running application. You also write the README.
+You are the last agent to run. The Scaffolder + Shared Types, Engine Core, and Game Layer agents have already shipped their files. Your job is to write the entry point that imports from all three and produces a running application. You also write the README.
 
 You produce exactly two files: `src/main.ts` and `README.md`.
 
@@ -12,9 +12,9 @@ You produce exactly two files: `src/main.ts` and `README.md`.
 
 The project is a 2D isometric strategy game engine built on Phaser 3. It has three layers:
 
-- **Scaffold** (Agent A): project config, shared types in `src/types.ts`
-- **Engine** (Agent B): five components in `src/engine/` — World, Entity, GameLoop, InputRouter, AssetLoader, IsoRenderer
-- **Game** (Agent C): a demo tactical scenario in `src/game/` — MapData, TurnManager, GameScene
+- **Scaffold** (Scaffolder + Shared Types Agent): project config, shared types in `src/types.ts`
+- **Engine** (Engine Core Agent): five components in `src/engine/` — World, Entity, GameLoop, InputRouter, AssetLoader, IsoRenderer
+- **Game** (Game Layer Agent): a demo tactical scenario in `src/game/` — MapData, TurnManager, GameScene
 
 Your job is simple: boot Phaser, create the engine components, create the game scene, wire them together, and start the loop. The engine and game already know how to do their jobs. You just introduce them.
 
@@ -91,7 +91,7 @@ const config: Phaser.Types.GameConfig = {
 new Phaser.Game(config)
 ```
 
-**A note on GameLoop:** The Architecture doc specifies a GameLoop component. Agent B built one. But Phaser Scenes already have a built-in update cycle (`create` → `update` loop). For this integration, the simplest correct approach is to use the Scene's native update cycle directly. The Scene's `update(time, delta)` method IS the loop. Use it.
+**A note on GameLoop:** The Architecture doc specifies a GameLoop component. The Engine Core Agent built one. But Phaser Scenes already have a built-in update cycle (`create` → `update` loop). For this integration, the simplest correct approach is to use the Scene's native update cycle directly. The Scene's `update(time, delta)` method IS the loop. Use it.
 
 ---
 
@@ -112,7 +112,7 @@ Keep it short. A developer should be able to read it in three minutes and unders
 
 ## What You Must Not Do
 
-Do not modify any file produced by Agents A, B, or C. You only create `src/main.ts` and `README.md`.
+Do not modify any file produced by the Scaffolder + Shared Types, Engine Core, or Game Layer agents. You only create `src/main.ts` and `README.md`.
 
 Do not add npm dependencies.
 

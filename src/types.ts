@@ -83,7 +83,7 @@ export interface IAssetLoader {
 //                 col = (screenY / tileHeight) + (screenX / tileWidth)  [floored]
 // Default tile dimensions: tileWidth = 64, tileHeight = 32
 
-// ─── Game layer interfaces (used by Agent C, consumed by Agent D) ───────────
+// ─── Game layer interfaces (used by Game Layer Agent, consumed by Integration Agent) ───────────
 
 export interface IGameScene {
   initialize(world: IWorld, inputRouter: IInputRouter, entities: IEntity[]): void

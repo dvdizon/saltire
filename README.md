@@ -9,6 +9,14 @@ npm install
 npm run dev
 ```
 
+## How to play the demo
+
+- Click/tap an adjacent tile to move (no diagonals).
+- Click/tap an adjacent enemy to attack.
+- Each move or attack ends your turn; enemies act right after.
+- Win by defeating all enemies; lose if your player reaches 0 health.
+- Refresh the page to restart after a win or loss.
+
 ## What this prototype demonstrates
 
 - The five engine components (World, Entity, GameLoop, InputRouter, AssetLoader) working together.

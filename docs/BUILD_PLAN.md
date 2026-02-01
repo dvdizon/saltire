@@ -43,13 +43,13 @@ This means shared interfaces can't be discovered at runtime between agents. They
 
 The work breaks into four units:
 
-**Agent A — Scaffold:** Project config and shared types. The bones everything else attaches to. `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, and the shared `types.ts` file that defines every interface used across the engine.
+**Scaffolder + Shared Types Agent:** Project config and shared types. The bones everything else attaches to. `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, and the shared `types.ts` file that defines every interface used across the engine.
 
-**Agent B — Engine Core:** The five components from the Architecture doc, implemented as a single cohesive module. These components are tightly coupled — World talks to Entity, InputRouter needs to know about Entity positions, GameLoop orchestrates all of them. They belong together, owned by one agent.
+**Engine Core Agent:** The five components from the Architecture doc, implemented as a single cohesive module. These components are tightly coupled — World talks to Entity, InputRouter needs to know about Entity positions, GameLoop orchestrates all of them. They belong together, owned by one agent.
 
-**Agent C — Game Layer:** The demo game that runs on top of the engine. A small tactical scenario: isometric grid map, a player unit, enemy units, turn-based movement, simple combat, a win/lose condition. This agent writes against the engine's published interfaces — it does not need to see Agent B's implementation. It just needs the contracts.
+**Game Layer Agent:** The demo game that runs on top of the engine. A small tactical scenario: isometric grid map, a player unit, enemy units, turn-based movement, simple combat, a win/lose condition. This agent writes against the engine's published interfaces — it does not need to see the Engine Core Agent's implementation. It just needs the contracts.
 
-**Agent D — Integration:** The `main.ts` entry point that wires A + B + C together into a running application. Plus the `README.md`. This runs last, after A, B, and C have all shipped.
+**Integration Agent:** The `main.ts` entry point that wires scaffolder, engine, and game layers together into a running application. Plus the `README.md`. This runs last, after the other three have shipped.
 
 ---
 
@@ -57,12 +57,12 @@ The work breaks into four units:
 
 ```
 Phase 1 — Parallel
-  ├── Agent A (Scaffold)
-  ├── Agent B (Engine Core)
-  └── Agent C (Game Layer)
+  ├── Scaffolder + Shared Types Agent
+  ├── Engine Core Agent
+  └── Game Layer Agent
 
 Phase 2 — Serial (runs after Phase 1 is complete)
-  └── Agent D (Integration)
+  └── Integration Agent
 ```
 
 Phase 1 agents can run simultaneously because they each write to non-overlapping file paths and all build against the same shared contract defined below. Phase 2 runs after because it needs to import from all three.
@@ -75,27 +75,27 @@ Every agent knows exactly where its files go. No ambiguity.
 
 ```
 saltire/
-├── package.json                  ← Agent A
-├── tsconfig.json                 ← Agent A
-├── vite.config.ts                ← Agent A
-├── index.html                    ← Agent A
+├── package.json                  ← Scaffolder + Shared Types Agent
+├── tsconfig.json                 ← Scaffolder + Shared Types Agent
+├── vite.config.ts                ← Scaffolder + Shared Types Agent
+├── index.html                    ← Scaffolder + Shared Types Agent
 ├── src/
-│   ├── types.ts                  ← Agent A  (shared contract — source of truth)
+│   ├── types.ts                  ← Scaffolder + Shared Types Agent  (shared contract — source of truth)
 │   ├── engine/
-│   │   ├── World.ts              ← Agent B
-│   │   ├── Entity.ts             ← Agent B
-│   │   ├── GameLoop.ts           ← Agent B
-│   │   ├── InputRouter.ts        ← Agent B
-│   │   ├── AssetLoader.ts        ← Agent B
-│   │   ├── IsoRenderer.ts        ← Agent B  (draws tiles + entities using Phaser Graphics)
-│   │   └── index.ts              ← Agent B  (barrel export)
+│   │   ├── World.ts              ← Engine Core Agent
+│   │   ├── Entity.ts             ← Engine Core Agent
+│   │   ├── GameLoop.ts           ← Engine Core Agent
+│   │   ├── InputRouter.ts        ← Engine Core Agent
+│   │   ├── AssetLoader.ts        ← Engine Core Agent
+│   │   ├── IsoRenderer.ts        ← Engine Core Agent  (draws tiles + entities using Phaser Graphics)
+│   │   └── index.ts              ← Engine Core Agent  (barrel export)
 │   ├── game/
-│   │   ├── MapData.ts            ← Agent C
-│   │   ├── TurnManager.ts        ← Agent C
-│   │   ├── GameScene.ts          ← Agent C
-│   │   └── index.ts              ← Agent C  (barrel export)
-│   └── main.ts                   ← Agent D
-└── README.md                     ← Agent D
+│   │   ├── MapData.ts            ← Game Layer Agent
+│   │   ├── TurnManager.ts        ← Game Layer Agent
+│   │   ├── GameScene.ts          ← Game Layer Agent
+│   │   └── index.ts              ← Game Layer Agent  (barrel export)
+│   └── main.ts                   ← Integration Agent
+└── README.md                     ← Integration Agent
 ```
 
 ---
@@ -190,7 +190,7 @@ export interface IAssetLoader {
 //                 col = (screenY / tileHeight) + (screenX / tileWidth)  [floored]
 // Default tile dimensions: tileWidth = 64, tileHeight = 32
 
-// ─── Game layer interfaces (used by Agent C, consumed by Agent D) ───────────
+// ─── Game layer interfaces (used by Game Layer Agent, consumed by Integration Agent) ───────────
 
 export interface IGameScene {
   initialize(world: IWorld, inputRouter: IInputRouter, entities: IEntity[]): void
@@ -204,7 +204,7 @@ export interface IGameScene {
 
 ## Constructor Signatures
 
-The shared contract defines interfaces. It does not define how to instantiate the classes that implement them. That gap lives here. Every constructor signature below is the exact shape Agent D will call. Agent B must match them. No guessing at either end.
+The shared contract defines interfaces. It does not define how to instantiate the classes that implement them. That gap lives here. Every constructor signature below is the exact shape the Integration Agent will call. The Engine Core Agent must match them. No guessing at either end.
 
 ```typescript
 // World — the isometric grid
@@ -239,10 +239,10 @@ new AssetLoader(scene: Phaser.Scene)
 
 These constraints keep agents isolated and the integration clean.
 
-No agent imports from a sibling agent's directory. Agent B does not import from `game/`. Agent C does not import from `engine/`. They both import only from `../types.ts`.
+No agent imports from a sibling agent's directory. The Engine Core Agent does not import from `game/`. The Game Layer Agent does not import from `engine/`. They both import only from `../types.ts`.
 
 No agent invents types not in the shared contract. If something is missing, it should have been caught here. Flag it rather than improvise.
 
-No agent writes `main.ts`. That's Agent D's job and the only place where `engine/` and `game/` are wired together.
+No agent writes `main.ts`. That's the Integration Agent's job and the only place where `engine/` and `game/` are wired together.
 
 No agent reaches for external npm packages beyond Phaser 3. Everything is rendered programmatically using Phaser's built-in Graphics object. There are no sprites, no sprite sheets, no external assets in this prototype. Colored shapes on an isometric grid is the visual target.
