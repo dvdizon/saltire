@@ -5,6 +5,7 @@ const DEFAULT_PLAYER_HEALTH = 5
 const DEFAULT_ENEMY_HEALTH = 2
 const DAMAGE_PER_HIT = 1
 
+// GameScene wires game rules to engine-provided world, input, and entities.
 export class GameScene implements IGameScene {
   private world: IWorld | null = null
   private inputRouter: IInputRouter | null = null
@@ -14,6 +15,7 @@ export class GameScene implements IGameScene {
   private result: 'win' | 'lose' | 'playing' = 'playing'
   private skipNextTileSelect = false
 
+  // Cache references and register input handlers once at startup.
   initialize(world: IWorld, inputRouter: IInputRouter, entities: IEntity[]): void {
     this.world = world
     this.inputRouter = inputRouter
@@ -22,6 +24,7 @@ export class GameScene implements IGameScene {
     this.entities.forEach((entity) => this.ensureEntityHealth(entity))
 
     this.inputRouter.onTileSelected((row, col) => {
+      // Tapping an enemy also triggers a tile select; ignore the follow-up.
       if (this.skipNextTileSelect) {
         this.skipNextTileSelect = false
         return
@@ -35,6 +38,7 @@ export class GameScene implements IGameScene {
         return
       }
 
+      // Only allow adjacent, passable moves into empty tiles.
       const tile = this.world?.getTile(row, col)
       if (!tile || !tile.passable) {
         return
@@ -61,6 +65,7 @@ export class GameScene implements IGameScene {
         return
       }
 
+      // Only allow melee attacks against adjacent enemies.
       if (!this.isAdjacent(this.player.position.row, this.player.position.col, entity.position.row, entity.position.col)) {
         return
       }
@@ -75,6 +80,7 @@ export class GameScene implements IGameScene {
     })
   }
 
+  // Tick check for win/lose; no per-frame movement needed.
   update(_delta: number): void {
     if (this.result !== 'playing') {
       return
@@ -91,20 +97,24 @@ export class GameScene implements IGameScene {
     }
   }
 
+  // Used by the engine to halt updates when the match ends.
   isOver(): boolean {
     return this.result !== 'playing'
   }
 
+  // Expose the current outcome for UI or scene transitions.
   getResult(): 'win' | 'lose' | 'playing' {
     return this.result
   }
 
+  // Player action -> enemy phase -> back to player.
   private finishPlayerTurn(): void {
     this.turnManager.endPlayerTurn()
     this.runEnemyPhase()
     this.turnManager.startPlayerTurn()
   }
 
+  // Simple enemy AI: attack if adjacent, else step toward the player.
   private runEnemyPhase(): void {
     if (!this.player || !this.world) {
       return
@@ -143,26 +153,31 @@ export class GameScene implements IGameScene {
     }
   }
 
+  // Filter living enemies so dead entities don't act.
   private getEnemies(): IEntity[] {
     return this.entities.filter((entity) => entity.type === 'enemy' && (entity.health ?? 0) > 0)
   }
 
+  // Entity lookup used for collision/occupation checks.
   private getEntityAt(row: number, col: number): IEntity | null {
     return this.entities.find((entity) => entity.position.row === row && entity.position.col === col) ?? null
   }
 
+  // Manhattan adjacency keeps movement and combat strictly orthogonal.
   private isAdjacent(rowA: number, colA: number, rowB: number, colB: number): boolean {
     const rowDiff = Math.abs(rowA - rowB)
     const colDiff = Math.abs(colA - colB)
     return rowDiff + colDiff === 1
   }
 
+  // Choose the next step that reduces distance without pathfinding.
   private getNextEnemyStep(from: { row: number; col: number }, target: { row: number; col: number }): { row: number; col: number } | null {
     const rowDelta = target.row - from.row
     const colDelta = target.col - from.col
 
     const candidates: { row: number; col: number }[] = []
 
+    // Try the dominant axis first to reduce Manhattan distance quickly.
     if (Math.abs(rowDelta) >= Math.abs(colDelta)) {
       candidates.push({ row: from.row + Math.sign(rowDelta), col: from.col })
       if (colDelta !== 0) {
@@ -185,11 +200,13 @@ export class GameScene implements IGameScene {
     return null
   }
 
+  // Shared damage helper to keep combat rules consistent.
   private applyDamage(target: IEntity, amount: number): void {
     const currentHealth = target.health ?? target.maxHealth ?? 0
     target.health = Math.max(0, currentHealth - amount)
   }
 
+  // Remove a defeated entity from play and let the engine clean it up.
   private removeEntity(entity: IEntity): void {
     const index = this.entities.indexOf(entity)
     if (index >= 0) {
@@ -198,6 +215,7 @@ export class GameScene implements IGameScene {
     }
   }
 
+  // Ensure all entities have reasonable health values before play starts.
   private ensureEntityHealth(entity: IEntity): void {
     const defaultMaxHealth = entity.type === 'player' ? DEFAULT_PLAYER_HEALTH : DEFAULT_ENEMY_HEALTH
     let maxHealth = entity.maxHealth ?? defaultMaxHealth

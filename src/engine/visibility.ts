@@ -1,13 +1,16 @@
 import type { EntityPosition, IWorld, TerrainType } from '../types'
 
+// Default square visibility size centered on the player.
 export const DEFAULT_VISIBILITY_SIZE = 10
 
 const BLOCKING_TERRAIN: TerrainType = 'wall'
 
+// Stable string key for storing visibility/exploration in sets.
 export function tileKey(row: number, col: number): string {
   return `${row},${col}`
 }
 
+// Simple line-of-sight check using incremental steps.
 function hasLineOfSight(world: IWorld, start: EntityPosition, end: EntityPosition): boolean {
   const rowDelta = end.row - start.row
   const colDelta = end.col - start.col
@@ -34,6 +37,7 @@ function hasLineOfSight(world: IWorld, start: EntityPosition, end: EntityPositio
   return true
 }
 
+// Compute visible tiles in a square radius, filtering by line of sight.
 export function computeVisibleTiles(
   world: IWorld,
   origin: EntityPosition,
@@ -63,6 +67,7 @@ export function computeVisibleTiles(
   return visible
 }
 
+// Fast membership check for visibility state.
 export function isTileVisible(visibleTiles: Set<string>, row: number, col: number): boolean {
   return visibleTiles.has(tileKey(row, col))
 }

@@ -47,10 +47,12 @@ const PASSABLE_TERRAIN: Record<TerrainType, boolean> = {
   wall: false,
 }
 
+// Centralized passability lookup keeps movement/placement rules consistent.
 function isPassable(terrain: TerrainType): boolean {
   return PASSABLE_TERRAIN[terrain]
 }
 
+// Only cardinal neighbors are used to keep movement and region checks simple.
 function getCardinalNeighbors(row: number, col: number, rows: number, cols: number): EntityPosition[] {
   const candidates = [
     { row: row - 1, col },
@@ -68,12 +70,14 @@ function getCardinalNeighbors(row: number, col: number, rows: number, cols: numb
   )
 }
 
+// Inclusive RNG helper used across map/placement generation.
 function randomInt(min: number, max: number): number {
   const minValue = Math.ceil(min)
   const maxValue = Math.floor(max)
   return Math.floor(Math.random() * (maxValue - minValue + 1)) + minValue
 }
 
+// Fisher-Yates shuffle so biome/selection steps feel less patterned.
 function shuffle<T>(items: T[]): T[] {
   const result = [...items]
   for (let index = result.length - 1; index > 0; index -= 1) {
@@ -83,6 +87,7 @@ function shuffle<T>(items: T[]): T[] {
   return result
 }
 
+// Weighted picker for biased randomness (used in river wandering).
 function pickWeighted<T>(entries: Array<{ value: T; weight: number }>): T {
   const total = entries.reduce((sum, entry) => sum + entry.weight, 0)
   const roll = Math.random() * total
@@ -98,6 +103,7 @@ function pickWeighted<T>(entries: Array<{ value: T; weight: number }>): T {
   return entries[entries.length - 1].value
 }
 
+// Seed a few biomes to create large coherent regions instead of noise.
 function createBiomeSeeds(rows: number, cols: number): Array<{ type: BiomeType; row: number; col: number }> {
   const biomeCount = randomInt(2, 4)
   const selected = shuffle(BIOMES).slice(0, biomeCount)
@@ -109,6 +115,7 @@ function createBiomeSeeds(rows: number, cols: number): Array<{ type: BiomeType; 
   }))
 }
 
+// Assign each tile to its nearest biome seed (simple Voronoi).
 function assignBiomeMap(rows: number, cols: number, seeds: Array<{ type: BiomeType; row: number; col: number }>): BiomeType[][] {
   return Array.from({ length: rows }, (_, row) =>
     Array.from({ length: cols }, (_, col) => {
@@ -128,12 +135,14 @@ function assignBiomeMap(rows: number, cols: number, seeds: Array<{ type: BiomeTy
   )
 }
 
+// Lay down the base terrain for each biome before adding variation.
 function createBaseTerrain(rows: number, cols: number, biomeMap: BiomeType[][]): TerrainType[][] {
   return Array.from({ length: rows }, (_, row) =>
     Array.from({ length: cols }, (_, col) => BIOME_BASE_TERRAIN[biomeMap[row][col]]),
   )
 }
 
+// Add small terrain patches to break up large monotone biome regions.
 function addBiomePatches(map: TerrainType[][], biomeMap: BiomeType[][]): void {
   const rows = map.length
   const cols = map[0]?.length ?? 0
@@ -156,6 +165,7 @@ function addBiomePatches(map: TerrainType[][], biomeMap: BiomeType[][]): void {
       continue
     }
 
+    // Scale patches by biome size so small regions don't get over-noised.
     const patchCount = Math.max(1, Math.floor(tiles.length / 60))
     const patchTerrains = BIOME_PATCH_TERRAINS[biome]
 
@@ -167,6 +177,7 @@ function addBiomePatches(map: TerrainType[][], biomeMap: BiomeType[][]): void {
   }
 }
 
+// Random walk inside a biome to form a blob-like patch.
 function scatterPatch(
   map: TerrainType[][],
   biomeMap: BiomeType[][],
@@ -193,6 +204,7 @@ function scatterPatch(
   }
 }
 
+// Rivers and lakes add impassable tiles so movement has constraints.
 function addWaterFeatures(map: TerrainType[][]): void {
   const rows = map.length
   const cols = map[0]?.length ?? 0
@@ -211,6 +223,7 @@ function addWaterFeatures(map: TerrainType[][]): void {
   }
 }
 
+// Create a wandering river from one edge to the opposite side.
 function carveRiver(map: TerrainType[][], rows: number, cols: number): void {
   const startEdge = randomInt(0, 3)
   let row = 0
@@ -239,6 +252,7 @@ function carveRiver(map: TerrainType[][], rows: number, cols: number): void {
   let steps = 0
   while (steps < maxSteps) {
     map[row][col] = 'water'
+    // Occasionally widen the river for a more organic shape.
     if (Math.random() < 0.3) {
       const neighbors = getCardinalNeighbors(row, col, rows, cols)
       neighbors.forEach((neighbor) => {
@@ -260,6 +274,7 @@ function carveRiver(map: TerrainType[][], rows: number, cols: number): void {
   }
 }
 
+// Bias river steps toward the target, but allow some randomness.
 function pickNextRiverStep(options: EntityPosition[], target: EntityPosition): EntityPosition {
   const scored = options.map((option) => ({
     option,
@@ -277,6 +292,7 @@ function pickNextRiverStep(options: EntityPosition[], target: EntityPosition): E
   )
 }
 
+// Simple circular lake carve to break up terrain.
 function carveLake(map: TerrainType[][], center: EntityPosition, radius: number): void {
   for (let row = center.row - radius; row <= center.row + radius; row += 1) {
     for (let col = center.col - radius; col <= center.col + radius; col += 1) {
@@ -288,6 +304,7 @@ function carveLake(map: TerrainType[][], center: EntityPosition, radius: number)
   }
 }
 
+// If an island biome exists, surround the edges with water and a sand shore.
 function applyIslandRing(map: TerrainType[][], rows: number, cols: number): void {
   const ringThickness = randomInt(2, 4)
   const shoreThickness = 1
@@ -310,6 +327,7 @@ function applyIslandRing(map: TerrainType[][], rows: number, cols: number): void
   }
 }
 
+// Walls act like small impassable clusters to shape pathing.
 function addWallClusters(map: TerrainType[][], rows: number, cols: number): void {
   const totalTiles = rows * cols
   const wallBudget = Math.max(6, Math.floor(totalTiles * 0.04))
@@ -340,6 +358,7 @@ function addWallClusters(map: TerrainType[][], rows: number, cols: number): void
   }
 }
 
+// Main terrain generator that layers biome, water, and walls.
 function generateTerrainMap(rows: number, cols: number): TerrainType[][] {
   const seeds = createBiomeSeeds(rows, cols)
   const biomeMap = assignBiomeMap(rows, cols, seeds)
@@ -356,6 +375,7 @@ function generateTerrainMap(rows: number, cols: number): TerrainType[][] {
   return map
 }
 
+// Flatten all passable tiles into a list for spawn placement.
 function getPassableTiles(map: TerrainType[][]): EntityPosition[] {
   const positions: EntityPosition[] = []
   for (let row = 0; row < map.length; row += 1) {
@@ -368,6 +388,7 @@ function getPassableTiles(map: TerrainType[][]): EntityPosition[] {
   return positions
 }
 
+// Neighbor count helps keep spawns from being boxed in.
 function getPassableNeighborCount(map: TerrainType[][], position: EntityPosition): number {
   const rows = map.length
   const cols = map[0]?.length ?? 0
@@ -375,6 +396,7 @@ function getPassableNeighborCount(map: TerrainType[][], position: EntityPosition
   return neighbors.filter((neighbor) => isPassable(map[neighbor.row][neighbor.col])).length
 }
 
+// Flood-fill passable regions so we can pick a contiguous playable area.
 function getPassableRegions(map: TerrainType[][]): EntityPosition[][] {
   const rows = map.length
   const cols = map[0]?.length ?? 0
@@ -397,6 +419,7 @@ function getPassableRegions(map: TerrainType[][]): EntityPosition[][] {
           continue
         }
 
+        // BFS keeps region growth predictable and easy to follow.
         region.push(current)
         const neighbors = getCardinalNeighbors(current.row, current.col, rows, cols)
         for (const neighbor of neighbors) {
@@ -419,6 +442,7 @@ function getPassableRegions(map: TerrainType[][]): EntityPosition[][] {
   return regions
 }
 
+// Prefer a central spawn with enough adjacent passable tiles.
 function selectPlayerSpawn(tiles: EntityPosition[], map: TerrainType[][]): EntityPosition {
   const rows = map.length
   const cols = map[0]?.length ?? 0
@@ -442,6 +466,7 @@ function selectPlayerSpawn(tiles: EntityPosition[], map: TerrainType[][]): Entit
   return best
 }
 
+// Keep enemies a few tiles away when possible to avoid immediate combat.
 function selectEnemySpawns(
   tiles: EntityPosition[],
   player: EntityPosition,
@@ -466,6 +491,7 @@ function selectEnemySpawns(
         continue
       }
 
+      // Fallback: any remaining tile, so we always fill the requested count.
       const fallback = pool[randomInt(0, pool.length - 1)]
       selected.push(fallback)
       pool.splice(pool.indexOf(fallback), 1)
@@ -481,6 +507,7 @@ function selectEnemySpawns(
   return selected
 }
 
+// Build the player and enemy entity list from the chosen region.
 function buildEntities(map: TerrainType[][], regionTiles: EntityPosition[]): InitialEntityData[] {
   const rows = map.length
   const cols = map[0]?.length ?? 0
@@ -499,6 +526,7 @@ function buildEntities(map: TerrainType[][], regionTiles: EntityPosition[]): Ini
     maxHealth: 8,
   }
 
+  // Scale enemy count with map size, capped for pacing.
   const desiredEnemies = Math.max(
     MIN_ENEMIES,
     Math.min(MAX_ENEMIES, Math.floor((rows * cols) / 140)),
@@ -523,6 +551,7 @@ function buildEntities(map: TerrainType[][], regionTiles: EntityPosition[]): Ini
   return [player, ...enemies]
 }
 
+// End-to-end generator that retries until it finds a reasonable map.
 function generateGameData(): { map: TerrainType[][]; entities: InitialEntityData[] } {
   for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS; attempt += 1) {
     const rows = randomInt(MIN_MAP_SIZE, MAX_MAP_SIZE)
@@ -553,6 +582,7 @@ function generateGameData(): { map: TerrainType[][]; entities: InitialEntityData
     }
   }
 
+  // If all attempts fail, fall back to a small map so the game still loads.
   const fallbackMap = generateTerrainMap(MIN_MAP_SIZE, MIN_MAP_SIZE)
   const fallbackRegions = getPassableRegions(fallbackMap)
   const fallbackRegion = fallbackRegions[0] ?? getPassableTiles(fallbackMap)
