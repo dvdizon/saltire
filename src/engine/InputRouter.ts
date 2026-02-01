@@ -20,9 +20,17 @@ export class InputRouter implements IInputRouter {
     private world: IWorld,
     private getEntities: () => IEntity[],
   ) {
+    const canvas = this.scene.game.canvas
+    if (canvas) {
+      canvas.style.touchAction = 'none'
+      canvas.style.userSelect = 'none'
+    }
+
     this.scene.input.on('pointerdown', this.handlePointerDown)
     this.scene.input.on('pointermove', this.handlePointerMove)
     this.scene.input.on('pointerup', this.handlePointerUp)
+    this.scene.input.on('pointerupoutside', this.handlePointerCancel)
+    this.scene.input.on('pointerout', this.handlePointerCancel)
   }
 
   // Allow multiple listeners for tile selection.
@@ -84,6 +92,15 @@ export class InputRouter implements IInputRouter {
     }
 
     this.tileSelectedCallbacks.forEach((callback) => callback(row, col))
+  }
+
+  // Clear drag state when the pointer leaves or is released outside the canvas.
+  private handlePointerCancel = (): void => {
+    if (this.dragState?.active) {
+      this.scene.input.setDefaultCursor('default')
+    }
+
+    this.dragState = null
   }
 
   // Dragging pans the camera; returns true if a drag is in progress.
