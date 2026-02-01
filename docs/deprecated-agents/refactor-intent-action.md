@@ -11,7 +11,7 @@ After this refactor, neither of them mutates state directly. They produce *actio
 
 ## What You Must Not Do
 
-Do not touch any file in `src/engine/`. Do not touch `src/main.ts`. Do not touch `MapData.ts` or `index.ts` in `src/game/`. Do not add npm dependencies. Do not change the external behavior of the game — same moves, same combat, same win/lose conditions, same turn order. A player running the game before and after this refactor should notice nothing.
+Do not touch any file in `src/engine/`. Do not touch `src/main.ts`. Do not touch `MapData.ts` or `index.ts` in `src/reference-game/`. Do not add npm dependencies. Do not change the external behavior of the game — same moves, same combat, same win/lose conditions, same turn order. A player running the game before and after this refactor should notice nothing.
 
 Do not invent a class or module for the action system. It lives inside `GameScene.ts` as a type definition and a single function. Keep it flat.
 
@@ -126,7 +126,7 @@ The win check (`if tile is goal`) stays where it is. It reads state, it doesn't 
 
 `TurnManager` currently mutates entity positions and health directly during enemy turn processing. It needs access to `applyAction` and the entity array to produce and apply actions instead.
 
-**Constructor change:** `TurnManager` already receives the entity array. It now also needs `applyAction`. The cleanest way: import `applyAction` directly from `GameScene.ts`. It's in the same `src/game/` directory. This is an intra-game-layer import — not a cross-boundary import — so it's fine.
+**Constructor change:** `TurnManager` already receives the entity array. It now also needs `applyAction`. The cleanest way: import `applyAction` directly from `GameScene.ts`. It's in the same `src/reference-game/` directory. This is an intra-game-layer import — not a cross-boundary import — so it's fine.
 
 ```typescript
 import { applyAction } from './GameScene'
@@ -160,8 +160,8 @@ The enemy AI logic — Manhattan distance heuristic, adjacency check, passabilit
 
 ```
 src/types.ts          ← add GameAction type at the bottom
-src/game/GameScene.ts ← add applyAction function, refactor onTileSelected callback
-src/game/TurnManager.ts ← import applyAction, refactor enemy move and attack
+src/reference-game/GameScene.ts ← add applyAction function, refactor onTileSelected callback
+src/reference-game/TurnManager.ts ← import applyAction, refactor enemy move and attack
 ```
 
 Three files. No new files. No deleted files. No changes to engine code or main.ts.

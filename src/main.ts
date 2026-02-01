@@ -2,7 +2,7 @@ import Phaser from 'phaser'
 
 import type { IEntity, EntitySnapshot } from './types'
 import { Entity, InputRouter, IsoRenderer, World } from './engine'
-import { GameScene, INITIAL_ENTITIES, MAP_TERRAIN } from './game'
+import { GameScene, INITIAL_ENTITIES, MAP_TERRAIN } from './reference-game'
 
 class IsoScene extends Phaser.Scene {
   private world!: World
@@ -215,4 +215,3 @@ const config: Phaser.Types.Core.GameConfig = {
 }
 
 new Phaser.Game(config)
-

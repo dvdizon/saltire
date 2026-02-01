@@ -89,7 +89,7 @@ saltire/
 │   │   ├── AssetLoader.ts        ← Engine Core Agent
 │   │   ├── IsoRenderer.ts        ← Engine Core Agent  (draws tiles + entities using Phaser Graphics)
 │   │   └── index.ts              ← Engine Core Agent  (barrel export)
-│   ├── game/
+│   ├── reference-game/
 │   │   ├── MapData.ts            ← Game Layer Agent
 │   │   ├── TurnManager.ts        ← Game Layer Agent
 │   │   ├── GameScene.ts          ← Game Layer Agent
@@ -239,10 +239,10 @@ new AssetLoader(scene: Phaser.Scene)
 
 These constraints keep agents isolated and the integration clean.
 
-No agent imports from a sibling agent's directory. The Engine Core Agent does not import from `game/`. The Game Layer Agent does not import from `engine/`. They both import only from `../types.ts`.
+No agent imports from a sibling agent's directory. The Engine Core Agent does not import from `reference-game/`. The Reference Game Agent does not import from `engine/`. They both import only from `../types.ts`.
 
 No agent invents types not in the shared contract. If something is missing, it should have been caught here. Flag it rather than improvise.
 
-No agent writes `main.ts`. That's the Integration Agent's job and the only place where `engine/` and `game/` are wired together.
+No agent writes `main.ts`. That's the Integration Agent's job and the only place where `engine/` and `reference-game/` are wired together.
 
 No agent reaches for external npm packages beyond Phaser 3. Everything is rendered programmatically using Phaser's built-in Graphics object. There are no sprites, no sprite sheets, no external assets in this prototype. Colored shapes on an isometric grid is the visual target.

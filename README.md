@@ -55,7 +55,7 @@ The World is a grid of tiles. Entities live on the grid. The loop updates the wo
 ## File structure
 
 - `src/engine/` contains engine primitives that stay game-agnostic.
-- `src/game/` contains the demo scenario and game-specific logic.
+- `src/reference-game/` contains the reference scenario and game-specific logic.
 
 This separation keeps the engine reusable and the game layer free to evolve without rewiring core systems.
 
