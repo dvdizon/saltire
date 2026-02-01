@@ -180,9 +180,12 @@ export class GameScene implements IGameScene {
 
   restoreSnapshot(snapshot: GameSnapshot): void {
     if (!this.entityFactory) {
-      return
+      throw new Error('GameScene.restoreSnapshot requires an entity factory before restoring.')
     }
 
+    for (const entity of this.entities) {
+      entity.destroy()
+    }
     this.entities.length = 0
     for (const snap of snapshot.entities) {
       this.entities.push(this.entityFactory(snap))
