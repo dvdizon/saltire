@@ -1,5 +1,7 @@
 # Saltire
 
+[![CI](https://github.com/dvdizon/saltire/actions/workflows/ci.yml/badge.svg)](https://github.com/dvdizon/saltire/actions/workflows/ci.yml)
+
 ![Saltire](logo.PNG)
 
 Saltire is a 2D isometric strategy game engine prototype built with Phaser 3 and TypeScript. The goal is to prove that a developer can stand up a playable, grid-based tactical scenario quickly while keeping the engine's mental model simple and explicit.
@@ -17,6 +19,10 @@ npm run dev
 npm run typecheck
 npm run sanity
 ```
+
+## Changelog
+
+See `CHANGELOG.md` for release notes and version history.
 
 ## Worktrees
 
