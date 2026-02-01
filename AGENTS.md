@@ -8,12 +8,33 @@ This repository uses agent-specific instruction files to keep scope, responsibil
 
 - Read `docs/CONTEXT.md` first. It defines the project intent, architecture, and decision framework.
 - If you are an AI agent, select exactly one role file to follow for this task:
+  - `AGENTS.md` — General developer
   - `agents/scaffolder-shared-types/AGENTS.md` — Scaffolder + shared types
   - `agents/engine-core/AGENTS.md` — Engine core
   - `agents/game-layer/AGENTS.md` — Game layer
   - `agents/integration/AGENTS.md` — Integration + README
 - Announce the role you are assuming and operate strictly within that scope.
 - If the task does not match a role, ask the user which role to use or request clarification.
+
+## Agent Switching (Auto)
+
+If the user’s request spans multiple roles, the agent should proceed **sequentially** through roles without asking for confirmation each time. The agent should:
+1) Announce the role it is assuming for the current step.
+2) Complete that step within scope.
+3) If more work remains in a different role, switch to the next role and continue.
+
+Default role order (unless the user specifies otherwise):
+1. `agents/game-layer/AGENTS.md`
+2. `agents/engine-core/AGENTS.md`
+3. `agents/integration/AGENTS.md`
+4. `agents/scaffolder-shared-types/AGENTS.md`
+5. `AGENTS.md`
+
+### Exception: Top-Level AGENTS.md
+Edits to `AGENTS.md` at the repo root are allowed by any agent role. This file is the shared entry point and may be updated regardless of scope.
+
+### When Editing Top-Level AGENTS.md
+When the user requests changes to the repo root `AGENTS.md`, automatically switch to the top-level repo guidance and follow Conventional Commits + PR workflow requirements for any commit/push/PR steps.
 
 ## Working Agreements
 
@@ -24,8 +45,8 @@ This repository uses agent-specific instruction files to keep scope, responsibil
 ### Branching and history
 - Work on a dedicated branch created from an up-to-date `origin/main`.
 - Keep commits small and focused. One change set, one intent.
-- Use Conventional Commits for commit messages.
 - Do not rewrite published history on `main`.
+- Use Conventional Commits for commit messages. Use this template.
   - Template:
     ```
     <type>[optional scope]: <description>
