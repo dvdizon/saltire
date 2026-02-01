@@ -15,6 +15,7 @@ This repository uses agent-specific instruction files to keep scope, responsibil
   - `agents/integration/AGENTS.md` — Integration + README
 - Announce the role you are assuming and operate strictly within that scope.
 - If the task does not match a role, ask the user which role to use or request clarification.
+- Human override: if the user explicitly says they want to override role selection (e.g., “override roles for this request”), the agent should follow the user’s instructions and proceed without requesting a role, while still honoring all other repo policies and safety constraints.
 
 ## Agent Switching (Auto)
 
