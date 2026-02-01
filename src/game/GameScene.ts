@@ -12,6 +12,7 @@ export class GameScene implements IGameScene {
   private player: IEntity | null = null
   private turnManager = new TurnManager()
   private result: 'win' | 'lose' | 'playing' = 'playing'
+  private skipNextTileSelect = false
 
   initialize(world: IWorld, inputRouter: IInputRouter, entities: IEntity[]): void {
     this.world = world
@@ -21,6 +22,11 @@ export class GameScene implements IGameScene {
     this.entities.forEach((entity) => this.ensureEntityHealth(entity))
 
     this.inputRouter.onTileSelected((row, col) => {
+      if (this.skipNextTileSelect) {
+        this.skipNextTileSelect = false
+        return
+      }
+
       if (!this.turnManager.isPlayerTurn() || this.result !== 'playing') {
         return
       }
@@ -59,6 +65,7 @@ export class GameScene implements IGameScene {
         return
       }
 
+      this.skipNextTileSelect = true
       this.applyDamage(entity, DAMAGE_PER_HIT)
       if ((entity.health ?? 0) <= 0) {
         this.removeEntity(entity)
@@ -179,7 +186,7 @@ export class GameScene implements IGameScene {
   }
 
   private applyDamage(target: IEntity, amount: number): void {
-    const currentHealth = target.health ?? 0
+    const currentHealth = target.health ?? target.maxHealth ?? 0
     target.health = Math.max(0, currentHealth - amount)
   }
 
@@ -192,14 +199,13 @@ export class GameScene implements IGameScene {
   }
 
   private ensureEntityHealth(entity: IEntity): void {
-    if (entity.type === 'player') {
-      const maxHealth = entity.maxHealth ?? DEFAULT_PLAYER_HEALTH
-      entity.maxHealth = maxHealth
-      entity.health = entity.health ?? maxHealth
-      return
+    const defaultMaxHealth = entity.type === 'player' ? DEFAULT_PLAYER_HEALTH : DEFAULT_ENEMY_HEALTH
+    let maxHealth = entity.maxHealth ?? defaultMaxHealth
+
+    if (entity.health !== undefined && entity.health > maxHealth) {
+      maxHealth = entity.health
     }
 
-    const maxHealth = entity.maxHealth ?? DEFAULT_ENEMY_HEALTH
     entity.maxHealth = maxHealth
     entity.health = entity.health ?? maxHealth
   }
