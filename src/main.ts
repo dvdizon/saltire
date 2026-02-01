@@ -39,6 +39,9 @@ class IsoScene extends Phaser.Scene {
       this.cameras.main.width,
       this.cameras.main.height
     )
+
+    this.scale.on('resize', this.handleResize, this)
+    this.handleResize({ width: this.scale.width, height: this.scale.height })
   }
 
   update(_time: number, delta: number): void {
@@ -79,13 +82,30 @@ class IsoScene extends Phaser.Scene {
       )
       .setOrigin(0.5)
   }
+
+  private handleResize = (gameSize: { width: number; height: number }): void => {
+    const { width, height } = gameSize
+    this.cameras.main.setViewport(0, 0, width, height)
+    this.cameras.main.setSize(width, height)
+
+    if (this.endText) {
+      this.endText.setPosition(this.cameras.main.centerX, this.cameras.main.centerY - 20)
+    }
+
+    if (this.restartText) {
+      this.restartText.setPosition(this.cameras.main.centerX, this.cameras.main.centerY + 24)
+    }
+  }
 }
 
 const config: Phaser.Types.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: window.innerWidth,
-  height: window.innerHeight,
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    width: window.innerWidth,
+    height: window.innerHeight
+  },
   backgroundColor: '#1a1a2e',
   scene: [IsoScene]
 }
