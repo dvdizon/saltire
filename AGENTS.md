@@ -52,7 +52,7 @@ When the user requests changes to the repo root `AGENTS.md`, automatically switc
     ```
     <type>[optional scope]: <description>
 
-    [optional body]
+    [required body]
 
     [optional footer(s)]
     ```
