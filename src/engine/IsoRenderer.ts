@@ -263,21 +263,26 @@ export class IsoRenderer {
       return
     }
 
+    const { height } = this.getViewportSize()
+    const camera = this.graphics.scene.cameras.main
+    const hudX = camera.scrollX + HUD_MARGIN
+    const hudY = camera.scrollY + height - HUD_MARGIN - HUD_HEIGHT
+
     const ratio = player.maxHealth > 0 ? player.health / player.maxHealth : 0
     const filledWidth = Math.max(0, Math.min(HUD_WIDTH, HUD_WIDTH * ratio))
     const color = this.lerpColor(0xef4444, 0x22c55e, ratio)
 
     this.graphics.fillStyle(0x0f172a, 0.7)
-    this.graphics.fillRect(HUD_MARGIN - 8, HUD_MARGIN - 8, HUD_WIDTH + 16, HUD_HEIGHT + 16)
+    this.graphics.fillRect(hudX - 8, hudY - 8, HUD_WIDTH + 16, HUD_HEIGHT + 16)
     this.graphics.lineStyle(1, 0xffffff, 0.4)
-    this.graphics.strokeRect(HUD_MARGIN - 8, HUD_MARGIN - 8, HUD_WIDTH + 16, HUD_HEIGHT + 16)
+    this.graphics.strokeRect(hudX - 8, hudY - 8, HUD_WIDTH + 16, HUD_HEIGHT + 16)
 
     this.graphics.fillStyle(0x111827, 0.95)
-    this.graphics.fillRect(HUD_MARGIN, HUD_MARGIN, HUD_WIDTH, HUD_HEIGHT)
+    this.graphics.fillRect(hudX, hudY, HUD_WIDTH, HUD_HEIGHT)
     this.graphics.fillStyle(color, 1)
-    this.graphics.fillRect(HUD_MARGIN, HUD_MARGIN, filledWidth, HUD_HEIGHT)
+    this.graphics.fillRect(hudX, hudY, filledWidth, HUD_HEIGHT)
     this.graphics.lineStyle(1, 0x000000, 0.6)
-    this.graphics.strokeRect(HUD_MARGIN, HUD_MARGIN, HUD_WIDTH, HUD_HEIGHT)
+    this.graphics.strokeRect(hudX, hudY, HUD_WIDTH, HUD_HEIGHT)
   }
 
   private drawWallTile(x: number, y: number): void {
