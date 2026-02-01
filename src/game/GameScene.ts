@@ -1,4 +1,4 @@
-import type { IGameScene, IWorld, IInputRouter, IEntity, GameAction } from '../types'
+import type { IGameScene, IWorld, IInputRouter, IEntity, GameAction, EntitySnapshot, GameSnapshot } from '../types'
 import { TurnManager } from './TurnManager'
 
 const DEFAULT_PLAYER_HEALTH = 5
@@ -17,7 +17,16 @@ type EntityWithInfoPanel = IEntity & { infoPanel?: InfoPanelData }
 
 // applyAction is the single mutation point for all game state changes.
 // It receives action objects and performs the actual state mutations.
-export function applyAction(action: GameAction, entities: IEntity[]): void {
+export function applyAction(
+  action: GameAction,
+  entities: IEntity[],
+  onPlayerDamaged?: () => void,
+  onAction?: (action: GameAction) => void
+): void {
+  if (onAction) {
+    onAction(action)
+  }
+
   if (action.kind === 'move') {
     const entity = entities.find((e) => e.id === action.entityId)
     if (entity) {
@@ -27,6 +36,9 @@ export function applyAction(action: GameAction, entities: IEntity[]): void {
     const target = entities.find((e) => e.id === action.targetId)
     if (target) {
       target.health = Math.max(0, (target.health ?? 0) - 1)
+      if (target.type === 'player' && onPlayerDamaged) {
+        onPlayerDamaged()
+      }
     }
   } else if (action.kind === 'remove') {
     const index = entities.findIndex((e) => e.id === action.entityId)
@@ -44,7 +56,12 @@ export class GameScene implements IGameScene {
   private player: IEntity | null = null
   private turnManager = new TurnManager()
   private result: 'win' | 'lose' | 'playing' = 'playing'
+  private actionLog: GameAction[] = []
   private skipNextTileSelect = false
+  private entityFactory: ((snap: EntitySnapshot) => IEntity) | null = null
+  private logAction = (action: GameAction): void => {
+    this.actionLog.push(action)
+  }
 
   // Cache references and register input handlers once at startup.
   initialize(world: IWorld, inputRouter: IInputRouter, entities: IEntity[]): void {
@@ -86,7 +103,7 @@ export class GameScene implements IGameScene {
         return
       }
 
-      applyAction({ kind: 'move', entityId: this.player.id, to: { row, col } }, this.entities)
+      applyAction({ kind: 'move', entityId: this.player.id, to: { row, col } }, this.entities, undefined, this.logAction)
       this.finishPlayerTurn()
     })
 
@@ -105,14 +122,18 @@ export class GameScene implements IGameScene {
       }
 
       this.skipNextTileSelect = true
-      applyAction({ kind: 'attack', attackerId: this.player.id, targetId: entity.id }, this.entities)
+      applyAction({ kind: 'attack', attackerId: this.player.id, targetId: entity.id }, this.entities, undefined, this.logAction)
       if ((entity.health ?? 0) <= 0) {
-        applyAction({ kind: 'remove', entityId: entity.id }, this.entities)
+        applyAction({ kind: 'remove', entityId: entity.id }, this.entities, undefined, this.logAction)
         entity.destroy()
       }
 
       this.finishPlayerTurn()
     })
+  }
+
+  setEntityFactory(factory: (snap: EntitySnapshot) => IEntity): void {
+    this.entityFactory = factory
   }
 
   // Tick check for win/lose; no per-frame movement needed.
@@ -142,6 +163,71 @@ export class GameScene implements IGameScene {
     return this.result
   }
 
+  takeSnapshot(): GameSnapshot {
+    return {
+      entities: this.entities.map((entity) => ({
+        id: entity.id,
+        type: entity.type,
+        position: { row: entity.position.row, col: entity.position.col },
+        health: entity.health,
+        maxHealth: entity.maxHealth,
+      })),
+      turn: this.turnManager.getCurrentTurn(),
+      result: this.result,
+      actionLog: [...this.actionLog],
+    }
+  }
+
+  restoreSnapshot(snapshot: GameSnapshot): void {
+    if (!this.entityFactory) {
+      return
+    }
+
+    this.entities.length = 0
+    for (const snap of snapshot.entities) {
+      this.entities.push(this.entityFactory(snap))
+    }
+
+    if (snapshot.turn === 'player') {
+      this.turnManager.startPlayerTurn()
+    } else {
+      this.turnManager.startEnemyTurn()
+    }
+
+    this.result = snapshot.result
+    this.actionLog = [...snapshot.actionLog]
+    this.player = this.entities.find((entity) => entity.type === 'player') ?? null
+
+    if (this.player) {
+      this.setupPlayerInfoPanel(this.player as EntityWithInfoPanel)
+    }
+  }
+
+  static replayFromSnapshot(
+    snapshot: GameSnapshot,
+    actions: GameAction[],
+    entityFactory: (snap: EntitySnapshot) => IEntity
+  ): GameSnapshot {
+    const entities: IEntity[] = snapshot.entities.map((snap) => entityFactory(snap))
+
+    for (const action of actions) {
+      applyAction(action, entities)
+    }
+
+    return {
+      entities: entities.map((entity) => ({
+        id: entity.id,
+        type: entity.type,
+        position: { row: entity.position.row, col: entity.position.col },
+        health: entity.health,
+        maxHealth: entity.maxHealth,
+      })),
+      turn: snapshot.turn,
+      result: snapshot.result,
+      actionLog: [...snapshot.actionLog, ...actions],
+    }
+  }
+
   // Player action -> enemy phase -> back to player.
   private finishPlayerTurn(): void {
     this.turnManager.endPlayerTurn()
@@ -166,8 +252,12 @@ export class GameScene implements IGameScene {
       }
 
       if (this.isAdjacent(enemy.position.row, enemy.position.col, this.player.position.row, this.player.position.col)) {
-        applyAction({ kind: 'attack', attackerId: enemy.id, targetId: this.player.id }, this.entities)
-        this.refreshPlayerInfoPanel()
+        applyAction(
+          { kind: 'attack', attackerId: enemy.id, targetId: this.player.id },
+          this.entities,
+          () => this.refreshPlayerInfoPanel(),
+          this.logAction
+        )
         if ((this.player.health ?? 0) <= 0) {
           this.result = 'lose'
           return
@@ -179,7 +269,12 @@ export class GameScene implements IGameScene {
       if (nextStep && !this.getEntityAt(nextStep.row, nextStep.col)) {
         const tile = this.world.getTile(nextStep.row, nextStep.col)
         if (tile?.passable) {
-          applyAction({ kind: 'move', entityId: enemy.id, to: { row: nextStep.row, col: nextStep.col } }, this.entities)
+          applyAction(
+            { kind: 'move', entityId: enemy.id, to: { row: nextStep.row, col: nextStep.col } },
+            this.entities,
+            undefined,
+            this.logAction
+          )
         }
       }
     }

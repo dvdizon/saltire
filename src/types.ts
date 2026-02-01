@@ -98,3 +98,20 @@ export type GameAction =
   | { kind: 'move';   entityId: string; to: EntityPosition }
   | { kind: 'attack'; attackerId: string; targetId: string }
   | { kind: 'remove'; entityId: string }
+
+// ─── Serialization ──────────────────────────────────────────────────────────
+
+export interface EntitySnapshot {
+  id: string
+  type: string
+  position: EntityPosition
+  health?: number
+  maxHealth?: number
+}
+
+export interface GameSnapshot {
+  entities: EntitySnapshot[]
+  turn: 'player' | 'enemy'
+  result: 'win' | 'lose' | 'playing'
+  actionLog: GameAction[]
+}
