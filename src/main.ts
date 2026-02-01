@@ -14,7 +14,9 @@ class IsoScene extends Phaser.Scene {
   private restartText?: Phaser.GameObjects.Text
 
   create(): void {
-    this.world = new World(10, 10)
+    const mapRows = MAP_TERRAIN.length
+    const mapCols = MAP_TERRAIN[0]?.length ?? mapRows
+    this.world = new World(mapRows, mapCols)
     this.world.loadMap(MAP_TERRAIN)
 
     this.entities = INITIAL_ENTITIES.map((spawn, index) =>
@@ -111,3 +113,4 @@ const config: Phaser.Types.GameConfig = {
 }
 
 new Phaser.Game(config)
+

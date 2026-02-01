@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { IEntity, IWorld, TerrainType } from '../types'
+import { computeVisibleTiles, DEFAULT_VISIBILITY_SIZE, isTileVisible, tileKey } from './visibility'
 
 export const TILE_W = 64
 export const TILE_H = 32
@@ -9,13 +10,25 @@ const ENTITY_Y_OFFSET = TILE_H * 0.3
 const HUD_MARGIN = 16
 const HUD_WIDTH = 160
 const HUD_HEIGHT = 12
+const WALL_HEIGHT = TILE_H
+const FOG_COLOR = 0x0b1120
+const FOG_ALPHA = 0.78
+const FOG_EXPLORED_COLOR = 0x0f172a
+const FOG_EXPLORED_ALPHA = 0.45
 
 const TERRAIN_COLORS: Record<TerrainType, number> = {
   grass: 0x5cb85c,
   dirt: 0xb37b4d,
   sand: 0xf4d35e,
   water: 0x4d8dd6,
-  wall: 0x3f3f3f,
+  wall: 0x4b5563,
+}
+
+const WALL_COLORS = {
+  top: 0x4b5563,
+  left: 0x1f2937,
+  right: 0x374151,
+  outline: 0x0f172a,
 }
 
 const ENTITY_COLORS: Record<string, number> = {
@@ -52,6 +65,8 @@ export function screenToGrid(
 }
 
 export class IsoRenderer {
+  private exploredTiles = new Set<string>()
+
   constructor(
     private graphics: Phaser.GameObjects.Graphics,
     private world: IWorld,
@@ -62,14 +77,15 @@ export class IsoRenderer {
 
   render(): void {
     this.graphics.clear()
-    this.drawTiles()
-    this.drawHover()
-    this.drawMoveHints()
-    this.drawEntities()
+    const visibility = this.getVisibility()
+    this.drawTiles(visibility)
+    this.drawHover(visibility)
+    this.drawMoveHints(visibility)
+    this.drawEntities(visibility)
     this.drawHud()
   }
 
-  private drawTiles(): void {
+  private drawTiles(visibility: VisibilityState): void {
     const { originX, originY } = this.getOrigin()
 
     for (let row = 0; row < this.world.rows; row += 1) {
@@ -80,23 +96,38 @@ export class IsoRenderer {
         }
 
         const { x, y } = gridToScreen(row, col, originX, originY)
-        const color = TERRAIN_COLORS[tile.terrain]
+        const visible = visibility.isVisible(row, col)
+        const explored = visibility.isExplored(row, col)
 
-        this.graphics.fillStyle(color, 1)
-        this.graphics.lineStyle(1, 0x1f2937, 0.45)
-        this.graphics.beginPath()
-        this.graphics.moveTo(x, y)
-        this.graphics.lineTo(x + TILE_W / 2, y + TILE_H / 2)
-        this.graphics.lineTo(x, y + TILE_H)
-        this.graphics.lineTo(x - TILE_W / 2, y + TILE_H / 2)
-        this.graphics.closePath()
-        this.graphics.fillPath()
-        this.graphics.strokePath()
+        if (!visible && visibility.hasFog && !explored) {
+          this.drawFogTile(x, y)
+          continue
+        }
+
+        if (tile.terrain === 'wall') {
+          this.drawWallTile(x, y)
+        } else {
+          const color = TERRAIN_COLORS[tile.terrain]
+          this.graphics.fillStyle(color, 1)
+          this.graphics.lineStyle(1, 0x1f2937, 0.45)
+          this.graphics.beginPath()
+          this.graphics.moveTo(x, y)
+          this.graphics.lineTo(x + TILE_W / 2, y + TILE_H / 2)
+          this.graphics.lineTo(x, y + TILE_H)
+          this.graphics.lineTo(x - TILE_W / 2, y + TILE_H / 2)
+          this.graphics.closePath()
+          this.graphics.fillPath()
+          this.graphics.strokePath()
+        }
+
+        if (!visible && visibility.hasFog && explored) {
+          this.drawExploredTile(x, y)
+        }
       }
     }
   }
 
-  private drawMoveHints(): void {
+  private drawMoveHints(visibility: VisibilityState): void {
     const player = this.getEntities().find((entity) => entity.type === 'player')
     if (!player) {
       return
@@ -107,6 +138,10 @@ export class IsoRenderer {
     const hints = this.getCardinalNeighbors(player.position.row, player.position.col)
 
     for (const hint of hints) {
+      if (!visibility.isVisible(hint.row, hint.col)) {
+        continue
+      }
+
       const tile = this.world.getTile(hint.row, hint.col)
       if (!tile || !tile.passable) {
         continue
@@ -128,7 +163,7 @@ export class IsoRenderer {
     }
   }
 
-  private drawHover(): void {
+  private drawHover(visibility: VisibilityState): void {
     const pointer = this.graphics.scene.input.activePointer
     if (!pointer) {
       return
@@ -138,6 +173,10 @@ export class IsoRenderer {
     const { row, col } = screenToGrid(pointer.worldX, pointer.worldY, originX, originY)
     const tile = this.world.getTile(row, col)
     if (!tile) {
+      return
+    }
+
+    if (!visibility.isVisible(row, col)) {
       return
     }
 
@@ -167,7 +206,7 @@ export class IsoRenderer {
     }
   }
 
-  private drawEntities(): void {
+  private drawEntities(visibility: VisibilityState): void {
     const { originX, originY } = this.getOrigin()
     const entities = [...this.getEntities()].sort(
       (a, b) => a.position.row + a.position.col - (b.position.row + b.position.col),
@@ -176,6 +215,10 @@ export class IsoRenderer {
 
     for (const entity of entities) {
       const { row, col } = entity.position
+      if (!visibility.isVisible(row, col)) {
+        continue
+      }
+
       const { x, y } = gridToScreen(row, col, originX, originY)
       const color = ENTITY_COLORS[entity.type] ?? 0xffffff
       const entityY = y + TILE_H / 2 - ENTITY_Y_OFFSET
@@ -235,6 +278,75 @@ export class IsoRenderer {
     this.graphics.fillRect(HUD_MARGIN, HUD_MARGIN, filledWidth, HUD_HEIGHT)
     this.graphics.lineStyle(1, 0x000000, 0.6)
     this.graphics.strokeRect(HUD_MARGIN, HUD_MARGIN, HUD_WIDTH, HUD_HEIGHT)
+  }
+
+  private drawWallTile(x: number, y: number): void {
+    const top = { x, y: y - WALL_HEIGHT }
+    const right = { x: x + TILE_W / 2, y: y + TILE_H / 2 - WALL_HEIGHT }
+    const bottom = { x, y: y + TILE_H - WALL_HEIGHT }
+    const left = { x: x - TILE_W / 2, y: y + TILE_H / 2 - WALL_HEIGHT }
+
+    const baseRight = { x: x + TILE_W / 2, y: y + TILE_H / 2 }
+    const baseBottom = { x, y: y + TILE_H }
+    const baseLeft = { x: x - TILE_W / 2, y: y + TILE_H / 2 }
+
+    this.graphics.fillStyle(WALL_COLORS.left, 1)
+    this.graphics.beginPath()
+    this.graphics.moveTo(left.x, left.y)
+    this.graphics.lineTo(bottom.x, bottom.y)
+    this.graphics.lineTo(baseBottom.x, baseBottom.y)
+    this.graphics.lineTo(baseLeft.x, baseLeft.y)
+    this.graphics.closePath()
+    this.graphics.fillPath()
+
+    this.graphics.fillStyle(WALL_COLORS.right, 1)
+    this.graphics.beginPath()
+    this.graphics.moveTo(right.x, right.y)
+    this.graphics.lineTo(baseRight.x, baseRight.y)
+    this.graphics.lineTo(baseBottom.x, baseBottom.y)
+    this.graphics.lineTo(bottom.x, bottom.y)
+    this.graphics.closePath()
+    this.graphics.fillPath()
+
+    this.graphics.fillStyle(WALL_COLORS.top, 1)
+    this.graphics.beginPath()
+    this.graphics.moveTo(top.x, top.y)
+    this.graphics.lineTo(right.x, right.y)
+    this.graphics.lineTo(bottom.x, bottom.y)
+    this.graphics.lineTo(left.x, left.y)
+    this.graphics.closePath()
+    this.graphics.fillPath()
+
+    this.graphics.lineStyle(2, WALL_COLORS.outline, 0.9)
+    this.graphics.beginPath()
+    this.graphics.moveTo(top.x, top.y)
+    this.graphics.lineTo(right.x, right.y)
+    this.graphics.lineTo(bottom.x, bottom.y)
+    this.graphics.lineTo(left.x, left.y)
+    this.graphics.closePath()
+    this.graphics.strokePath()
+  }
+
+  private drawFogTile(x: number, y: number): void {
+    this.graphics.fillStyle(FOG_COLOR, FOG_ALPHA)
+    this.graphics.beginPath()
+    this.graphics.moveTo(x, y)
+    this.graphics.lineTo(x + TILE_W / 2, y + TILE_H / 2)
+    this.graphics.lineTo(x, y + TILE_H)
+    this.graphics.lineTo(x - TILE_W / 2, y + TILE_H / 2)
+    this.graphics.closePath()
+    this.graphics.fillPath()
+  }
+
+  private drawExploredTile(x: number, y: number): void {
+    this.graphics.fillStyle(FOG_EXPLORED_COLOR, FOG_EXPLORED_ALPHA)
+    this.graphics.beginPath()
+    this.graphics.moveTo(x, y)
+    this.graphics.lineTo(x + TILE_W / 2, y + TILE_H / 2)
+    this.graphics.lineTo(x, y + TILE_H)
+    this.graphics.lineTo(x - TILE_W / 2, y + TILE_H / 2)
+    this.graphics.closePath()
+    this.graphics.fillPath()
   }
 
   private getCardinalNeighbors(row: number, col: number): { row: number; col: number }[] {
@@ -297,4 +409,34 @@ export class IsoRenderer {
       height: height || this.screenHeight,
     }
   }
+
+  private getVisibility(): VisibilityState {
+    const player = this.getEntities().find((entity) => entity.type === 'player')
+    if (!player) {
+      return {
+        hasFog: false,
+        isVisible: () => true,
+        isExplored: () => false,
+      }
+    }
+
+    const visibleTiles = computeVisibleTiles(this.world, player.position, DEFAULT_VISIBILITY_SIZE)
+    this.updateExplored(visibleTiles)
+
+    return {
+      hasFog: true,
+      isVisible: (row: number, col: number) => isTileVisible(visibleTiles, row, col),
+      isExplored: (row: number, col: number) => this.exploredTiles.has(tileKey(row, col)),
+    }
+  }
+
+  private updateExplored(visibleTiles: Set<string>): void {
+    visibleTiles.forEach((key) => this.exploredTiles.add(key))
+  }
+}
+
+type VisibilityState = {
+  hasFog: boolean
+  isVisible: (row: number, col: number) => boolean
+  isExplored: (row: number, col: number) => boolean
 }
