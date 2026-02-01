@@ -280,11 +280,21 @@ export class IsoRenderer {
   }
 
   private getOrigin(): { originX: number; originY: number } {
+    const { width, height } = this.getViewportSize()
     const totalHeight = (this.world.rows + this.world.cols) * (TILE_H / 2)
 
     return {
-      originX: this.screenWidth / 2,
-      originY: (this.screenHeight - totalHeight) / 2,
+      originX: width / 2,
+      originY: (height - totalHeight) / 2,
+    }
+  }
+
+  private getViewportSize(): { width: number; height: number } {
+    const { width, height } = this.graphics.scene.scale
+
+    return {
+      width: width || this.screenWidth,
+      height: height || this.screenHeight,
     }
   }
 }
