@@ -1,4 +1,4 @@
-import type { IGameScene, IWorld, IInputRouter, IEntity } from '../types'
+import type { IGameScene, IWorld, IInputRouter, IEntity, GameAction } from '../types'
 import { TurnManager } from './TurnManager'
 
 const DEFAULT_PLAYER_HEALTH = 5
@@ -14,6 +14,27 @@ type InfoPanelData = {
   visible?: boolean
 }
 type EntityWithInfoPanel = IEntity & { infoPanel?: InfoPanelData }
+
+// applyAction is the single mutation point for all game state changes.
+// It receives action objects and performs the actual state mutations.
+export function applyAction(action: GameAction, entities: IEntity[]): void {
+  if (action.kind === 'move') {
+    const entity = entities.find((e) => e.id === action.entityId)
+    if (entity) {
+      entity.position = action.to
+    }
+  } else if (action.kind === 'attack') {
+    const target = entities.find((e) => e.id === action.targetId)
+    if (target) {
+      target.health = Math.max(0, (target.health ?? 0) - 1)
+    }
+  } else if (action.kind === 'remove') {
+    const index = entities.findIndex((e) => e.id === action.entityId)
+    if (index >= 0) {
+      entities.splice(index, 1)
+    }
+  }
+}
 
 // GameScene wires game rules to engine-provided world, input, and entities.
 export class GameScene implements IGameScene {
@@ -65,7 +86,7 @@ export class GameScene implements IGameScene {
         return
       }
 
-      this.player.position = { row, col }
+      applyAction({ kind: 'move', entityId: this.player.id, to: { row, col } }, this.entities)
       this.finishPlayerTurn()
     })
 
@@ -84,9 +105,10 @@ export class GameScene implements IGameScene {
       }
 
       this.skipNextTileSelect = true
-      this.applyDamage(entity, DAMAGE_PER_HIT)
+      applyAction({ kind: 'attack', attackerId: this.player.id, targetId: entity.id }, this.entities)
       if ((entity.health ?? 0) <= 0) {
-        this.removeEntity(entity)
+        applyAction({ kind: 'remove', entityId: entity.id }, this.entities)
+        entity.destroy()
       }
 
       this.finishPlayerTurn()
@@ -144,7 +166,8 @@ export class GameScene implements IGameScene {
       }
 
       if (this.isAdjacent(enemy.position.row, enemy.position.col, this.player.position.row, this.player.position.col)) {
-        this.applyDamage(this.player, DAMAGE_PER_HIT)
+        applyAction({ kind: 'attack', attackerId: enemy.id, targetId: this.player.id }, this.entities)
+        this.refreshPlayerInfoPanel()
         if ((this.player.health ?? 0) <= 0) {
           this.result = 'lose'
           return
@@ -156,7 +179,7 @@ export class GameScene implements IGameScene {
       if (nextStep && !this.getEntityAt(nextStep.row, nextStep.col)) {
         const tile = this.world.getTile(nextStep.row, nextStep.col)
         if (tile?.passable) {
-          enemy.position = { row: nextStep.row, col: nextStep.col }
+          applyAction({ kind: 'move', entityId: enemy.id, to: { row: nextStep.row, col: nextStep.col } }, this.entities)
         }
       }
     }
@@ -211,25 +234,6 @@ export class GameScene implements IGameScene {
     }
 
     return null
-  }
-
-  // Shared damage helper to keep combat rules consistent.
-  private applyDamage(target: IEntity, amount: number): void {
-    const currentHealth = target.health ?? target.maxHealth ?? 0
-    target.health = Math.max(0, currentHealth - amount)
-
-    if (this.player && target === this.player) {
-      this.refreshPlayerInfoPanel()
-    }
-  }
-
-  // Remove a defeated entity from play and let the engine clean it up.
-  private removeEntity(entity: IEntity): void {
-    const index = this.entities.indexOf(entity)
-    if (index >= 0) {
-      this.entities.splice(index, 1)
-      entity.destroy()
-    }
   }
 
   // Ensure all entities have reasonable health values before play starts.

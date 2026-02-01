@@ -91,3 +91,10 @@ export interface IGameScene {
   isOver(): boolean
   getResult(): 'win' | 'lose' | 'playing'
 }
+
+// ─── Game Actions (intent/action boundary for future multiplayer) ───────────
+
+export type GameAction =
+  | { kind: 'move';   entityId: string; to: EntityPosition }
+  | { kind: 'attack'; attackerId: string; targetId: string }
+  | { kind: 'remove'; entityId: string }
