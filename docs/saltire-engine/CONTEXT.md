@@ -9,11 +9,12 @@ Read this first. Everything else in this project defers to it.
 
 ```
 saltire/
-├── docs/                       # You are here
-│   ├── CONTEXT.md              ← Start here
-│   ├── PRD_Game_Engine.md      ← What and why
-│   ├── Architecture_Engineering_Doc.md  ← How
-│   ├── BUILD_PLAN.md           ← Execution plan
+├── docs/
+│   ├── saltire-engine/         # You are here
+│   │   ├── CONTEXT.md          ← Start here
+│   │   ├── PRD_Game_Engine.md  ← What and why
+│   │   ├── Architecture_Engineering_Doc.md  ← How
+│   │   └── BUILD_PLAN.md       ← Execution plan
 │   └── deprecated-agents/      # Deprecated agent instructions
 │       ├── scaffolder-shared-types-agent.md
 │       └── integration-agent.md

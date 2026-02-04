@@ -6,7 +6,7 @@ This repository uses agent-specific instruction files to keep scope, responsibil
 
 ## Quick Start
 
-- Read `docs/CONTEXT.md` first. It defines the project intent, architecture, and decision framework.
+- Read `docs/saltire-engine/CONTEXT.md` first. It defines the project intent, architecture, and decision framework.
 - If you are an AI agent, select exactly one role file to follow for this task:
   - `AGENTS.md` — General developer
   - `src/engine/AGENTS.md` — Engine core
@@ -182,4 +182,4 @@ gh pr create --title "..." --body "$body"
 
 ## Need Help?
 
-If a task does not map cleanly to an agent, start with `docs/CONTEXT.md` and open an issue describing the gap.
+If a task does not map cleanly to an agent, start with `docs/saltire-engine/CONTEXT.md` and open an issue describing the gap.
