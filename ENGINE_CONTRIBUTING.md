@@ -15,6 +15,11 @@
 - `infoPanel` is derived display state; do not serialize it.
 - Map terrain is a module-level constant; do not serialize it.
 
+## Backport workflow
+- Use `skills/engine-backport-sync/` to prepare engine-only patches for upstream Saltire.
+- Default backport scope is allowlisted to engine/shared docs paths and excludes game content.
+- Run leak scanning before sharing or applying any generated patch.
+
 ## Checks
 - `npm run typecheck`
 - `npm run sanity`
