@@ -1,5 +1,5 @@
 import Phaser from 'phaser'
-import { AssetManifest, AssetType, IAssetLoader } from '../types'
+import { AssetManifest, AssetType, IAssetLoader } from './types'
 
 // Map each manifest entry type to the matching Phaser loader call.
 const loadHandlers: Record<AssetType, (scene: Phaser.Scene, entry: any) => void> = {
@@ -50,7 +50,7 @@ export class AssetLoader implements IAssetLoader {
     return this.cache.get(key)
   }
 
-  // Look up assets in Phaser's caches based on asset type.
+  /** @internal Look up assets in Phaser's caches based on asset type. */
   private lookupAsset(key: string, type: AssetType): unknown {
     switch (type) {
       case 'audio':

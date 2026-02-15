@@ -8,8 +8,14 @@
 - Preserve game/repo confidentiality while sharing reusable engine capabilities.
 
 ## Validation
-- ✅ npm run typecheck
-- ✅ npm run sanity
+- [x] `npm run test`
+- [x] `npm run typecheck`
+- [x] `npm run sanity`
+- Use `[-]` instead of `[x]` for any failed command.
+
+## Merge Gate
+- [x] I confirm CI checks are green (`test`, `typecheck`, `sanity`).
+- [x] I confirm this PR targets `main` from a feature branch (no direct push to `main`).
 
 ## Notes
 - Generated using `engine-backport-sync` workflow.

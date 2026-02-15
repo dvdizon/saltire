@@ -1,9 +1,10 @@
 import Phaser from 'phaser'
-import { IEntity, IInputRouter, IWorld, TileSelectedCallback, EntityTappedCallback } from '../types'
+import { IEntity, IInputRouter, IWorld, TileSelectedCallback, EntityTappedCallback } from './types'
 import { screenToGrid, TILE_H } from './IsoRenderer'
 
 // Bridges Phaser pointer input to grid-level game events.
 export class InputRouter implements IInputRouter {
+  private enabled = true
   private tileSelectedCallbacks: TileSelectedCallback[] = []
   private entityTappedCallbacks: EntityTappedCallback[] = []
   private dragState: {
@@ -43,8 +44,22 @@ export class InputRouter implements IInputRouter {
     this.entityTappedCallbacks.push(callback)
   }
 
-  // Capture drag start so we can distinguish taps from pans.
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled
+    if (!enabled) {
+      this.dragState = null
+      this.scene.input.setDefaultCursor('default')
+    }
+  }
+
+  /** @internal Capture drag start so we can distinguish taps from pans. */
   private handlePointerDown = (pointer: Phaser.Input.Pointer): void => {
+    if (!this.enabled) {
+      return
+    }
+    if (pointer.event?.defaultPrevented) {
+      return
+    }
     this.dragState = {
       startX: pointer.x,
       startY: pointer.y,
@@ -54,8 +69,14 @@ export class InputRouter implements IInputRouter {
     }
   }
 
-  // Drag to pan the camera; otherwise just update hover cursor.
+  /** @internal Drag to pan the camera; otherwise just update hover cursor. */
   private handlePointerMove = (pointer: Phaser.Input.Pointer): void => {
+    if (!this.enabled) {
+      return
+    }
+    if (pointer.event?.defaultPrevented) {
+      return
+    }
     if (this.handleDrag(pointer)) {
       return
     }
@@ -63,8 +84,16 @@ export class InputRouter implements IInputRouter {
     this.updateHoverCursor(pointer)
   }
 
-  // Convert a tap into tile/entity callbacks if not dragging.
+  /** @internal Convert a tap into tile/entity callbacks if not dragging. */
   private handlePointerUp = (pointer: Phaser.Input.Pointer): void => {
+    if (!this.enabled) {
+      this.dragState = null
+      return
+    }
+    if (pointer.event?.defaultPrevented) {
+      this.dragState = null
+      return
+    }
     const wasDragging = this.dragState?.active ?? false
     this.dragState = null
 
@@ -94,7 +123,7 @@ export class InputRouter implements IInputRouter {
     this.tileSelectedCallbacks.forEach((callback) => callback(row, col))
   }
 
-  // Clear drag state when the pointer leaves or is released outside the canvas.
+  /** @internal Clear drag state when the pointer leaves or is released outside the canvas. */
   private handlePointerCancel = (): void => {
     if (this.dragState?.active) {
       this.scene.input.setDefaultCursor('default')
@@ -103,7 +132,7 @@ export class InputRouter implements IInputRouter {
     this.dragState = null
   }
 
-  // Dragging pans the camera; returns true if a drag is in progress.
+  /** @internal Dragging pans the camera; returns true if a drag is in progress. */
   private handleDrag(pointer: Phaser.Input.Pointer): boolean {
     if (!this.dragState || !pointer.isDown) {
       return false
@@ -132,7 +161,7 @@ export class InputRouter implements IInputRouter {
     return true
   }
 
-  // Update cursor to signal interactive tiles/entities.
+  /** @internal Update cursor to signal interactive tiles/entities. */
   private updateHoverCursor(pointer: Phaser.Input.Pointer): void {
     const { width, height } = this.scene.scale
     const { originX, originY } = this.getOrigin(width, height)
@@ -156,7 +185,7 @@ export class InputRouter implements IInputRouter {
     this.scene.input.setDefaultCursor('default')
   }
 
-  // Recompute origin so screen-to-grid math stays centered.
+  /** @internal Recompute origin so screen-to-grid math stays centered. */
   private getOrigin(screenWidth: number, screenHeight: number): {
     originX: number
     originY: number

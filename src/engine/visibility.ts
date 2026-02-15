@@ -1,7 +1,8 @@
-import type { EntityPosition, IWorld, TerrainType } from '../types'
+import type { EntityPosition, IWorld, TerrainType } from './types'
 
 // Default square visibility size centered on the player.
-export const DEFAULT_VISIBILITY_SIZE = 10
+// Tuned for a 20x20 map to keep fog-of-war active.
+export const DEFAULT_VISIBILITY_SIZE = 12
 
 const BLOCKING_TERRAIN: TerrainType = 'wall'
 

@@ -1,4 +1,4 @@
-import { IWorld, TerrainType, Tile } from '../types'
+import { IWorld, TerrainType, Tile } from './types'
 
 const DEFAULT_TERRAIN: TerrainType = 'grass'
 
