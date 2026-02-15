@@ -1,4 +1,4 @@
-import { EntityPosition, IEntity } from '../types'
+import { EntityPosition, IEntity } from './types'
 
 // Lightweight data holder for anything that lives on the grid.
 export class Entity implements IEntity {

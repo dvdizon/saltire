@@ -30,7 +30,12 @@ Use this skill when a game repo is based on Saltire and you need to upstream eng
    - `git checkout -b chore/backport-<date>`
    - `git am --3way /tmp/saltire-backport.patch`
 4. Run Saltire validation commands.
-5. Open PR in Saltire using template at `skills/engine-backport-sync/templates/backport-pr-body.md`.
+5. Open PR in Saltire using template at `skills/engine-backport-sync/templates/backport-pr-body.md` (includes CI merge-gate checkboxes).
+
+## Promote this skill to the public Saltire repo
+1. Copy `skills/engine-backport-sync/` into the Saltire repository root.
+2. Add a short mention in Saltire's contributor docs pointing to this skill.
+3. Keep the denylist and allowlist aligned with Saltire's evolving folder structure.
 
 ## Recommended validation
 - `npm run typecheck`

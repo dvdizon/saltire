@@ -1,4 +1,4 @@
-import { IGameLoop, TickCallback } from '../types'
+import { IGameLoop, TickCallback } from './types'
 
 // Simple RAF-based loop that fans out delta time to subscribers.
 export class GameLoop implements IGameLoop {
@@ -22,7 +22,7 @@ export class GameLoop implements IGameLoop {
     this.callbacks.push(callback)
   }
 
-  // Internal RAF handler that computes delta and invokes callbacks.
+  /** @internal RAF handler that computes delta and invokes callbacks. */
   private tick = (time: number): void => {
     if (!this.running) {
       return

@@ -16,10 +16,13 @@ Project scaffolding and shared types are already established. Do not modify conf
 
 ## Worktrees (Required)
 
-- Only use the git worktree workflow when running in the Codex CLI or the VS Code plugin. Skip worktrees for Codex web/mobile because diffs in worktrees are not visible there.
+- Only use the git worktree workflow when running in the Codex CLI or the VS Code plugin. Skip worktrees for Codex Web or the Codex iOS app because diffs in worktrees are not visible there.
 - Start every change by creating a git worktree under `.worktrees` at the repo root.
 - Use the naming convention `<YYYY-MM-DD-description>` for the worktree directory.
 - Do all work from that worktree directory, not the main working directory.
+- One user request must remain in one worktree and one branch.
+- Do not create additional worktrees/branches for the same request unless the user explicitly asks for split execution.
+- If multiple agent roles are needed for one request, continue sequentially in the same worktree/branch.
 
 Example:
 ```powershell
@@ -380,3 +383,12 @@ export { IsoRenderer, gridToScreen, screenToGrid, TILE_W, TILE_H } from './IsoRe
 ## What You Must Not Do
 
 Do not import from `src/reference-game/`. Do not write `src/main.ts`. Do not add npm dependencies. Do not invent public interfaces not in the shared contract. If something feels missing from the contract, leave a `// TODO:` comment — do not improvise a solution.
+
+---
+
+## Test and Refactor Expectations
+
+- For every engine change, look for opportunities to add or update tests that verify the changed behavior.
+- If you skip adding tests, record a short reason in your change notes.
+- When modifying large files, look for safe extractions into smaller modules/functions that improve readability and testability.
+- Keep refactors incremental and behavior-preserving; do not perform broad rewrites unless explicitly requested.
